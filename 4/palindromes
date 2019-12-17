@@ -1,0 +1,28 @@
+#!/bin/sh
+
+words='/usr/share/dict/words'
+
+for i in `seq $1`; do
+
+	# Ed's regex group \(.\)\(.\)\(.\)
+	regex="^$(for _ in `seq $i`; do printf '\(.\)'; done)$"
+
+	# egrep ^...$ words; words of 'n' length and put in $i
+	egrep "^$(for _ in `seq $i`; do printf '.'; done)$" $words > $i
+
+	# reverse the words in $i and add ^closures$
+	# 1,s/^...$/^\3\2\1$/
+	ed $i >/dev/null <<- EOF
+		1,\$s/$regex/^$(for j in `seq $i -1 1`; do printf "\\%s" $j; done)$/
+		w
+	EOF
+
+	# grep for reverse words in dictionary
+	egrep -i -f $i $words
+	# this unfortunately results in words like "wolf" | "flow"
+	#
+	# I should switch it so it were like
+	# 1,s/^...$/^\3\2\3$/
+done
+
+
