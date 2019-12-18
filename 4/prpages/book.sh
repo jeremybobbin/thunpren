@@ -1,0 +1,4 @@
+#!/bin/sh
+# prpages: compute number of pages that pr will print
+wc $* | awk '!/ total$/ { n += int(($1+55) / 56) }
+             END { print n }'
