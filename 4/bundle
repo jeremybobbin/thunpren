@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# This seems to be the only way to write bundle given the facilities in the book
+for i in $*
+do
+	# Assumes bundle is in PATH
+	(cd "$i" && bundle *) || {
+			echo "echo $1 1>&2"
+			echo "cat >$i << EOF"
+			ls -l $i
+			sed 's/EOF/$(echo EOF)/g' $i
+			echo "EOF"
+		}
+done
