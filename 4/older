@@ -1,0 +1,3 @@
+#!/bin/sh
+# older f: list files older than f
+ls -tr | sed -n "/^$1\$/q; p"
