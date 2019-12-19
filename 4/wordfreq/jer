@@ -1,0 +1,13 @@
+#!/bin/awk -f
+
+{
+	for (i = 1; i <= NF; i++)
+		# don't count words that start with '.'
+		if ($i !~ /\..*/) 
+			num[$i]++
+}
+
+END {
+	for (word in num)
+		print word, num[word]
+}
