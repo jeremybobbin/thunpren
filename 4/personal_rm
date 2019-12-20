@@ -1,0 +1,9 @@
+#!/bin/sh
+awk '
+BEGIN {
+	printf "echo personal_rm | at 12am;\n"
+	if (split(args, "'$*'") == 0)
+		printf "%s\n", "rm /tmp*"
+	else
+		printf "mv %s /tmp;\n", "'$*'"
+}' | sh
