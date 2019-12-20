@@ -10,9 +10,24 @@ BEGIN {
 	if ((n = length($0)) <= N)
 		print
 	else {
-		for (i = 1; n > N; n -= N) {
-			printf "%s\\\n", substr($0,i,N)
-			i += N;
+		i = 1
+		while (n > N) {
+			ln = substr($0,i,N-1)
+			#printf "N: %s\\n", N
+			for (m = length(ln); m >= 1; m--) {
+				if (substr(ln, m, 1) == " " || substr(ln, m, 1) == "\t")
+					break;
+			}
+			if (m > 1) {
+				ln = substr($0,i,m)
+				printf "%s\n", ln
+				i += length(ln)
+				n -= length(ln);
+			} else {
+				i += N-1;
+				n -= N-1;
+				printf "%s-\n", ln
+			}
 		}
 		printf "%s%s\n", substr(blanks,1,N-n), substr($0,i)
 	}
