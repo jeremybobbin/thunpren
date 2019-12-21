@@ -1,0 +1,34 @@
+#!/bin/sh
+#cal: nicer interface to /usr/bin/cal
+
+for arg in $*; do
+	case $arg in
+		[Jj]an*)	months="$months 1" ;;
+		[Ff]eb*)	months="$months 2" ;;
+		[Mm]ar*)	months="$months 3" ;;
+		[Aa]pr*)	months="$months 4" ;;
+		[Mm]ay*)	months="$months 5" ;;
+		[Jj]un*)	months="$months 6" ;;
+		[Jj]ul*)	months="$months 7" ;;
+		[Aa]ug*)	months="$months 8" ;;
+		[Ss]ep*)	months="$months 9" ;;
+		[Oo]ct*)	months="$months 10" ;;
+		[Nn]ov*)	months="$months 11" ;;
+		[Dd]ec*)	months="$months 12" ;;
+		*)		y=$arg  ;;
+	esac
+done
+
+case $y in
+	[0-9][0-9][0-9][0-9]) ;;
+	#		Get the century and prepend it to the year argument
+	[0-9][0-9])	y="$(date | awk '{ print substr($4, 1, 2) }')$y";;
+	*)		y="$(date | awk '{ print $4 }')"
+esac
+
+
+for m in $months; do
+	/usr/bin/cal $m $y
+done
+
+# I'll stop when the code isn't pretty.
