@@ -1,0 +1,37 @@
+#!/bin/sh
+
+opath=$PATH
+PATH=/bin:/usr/bin
+case $# in
+	0)	echo 'Usage: which command' 1>&2; exit 2;;
+esac
+
+match='exit 0'
+for arg in $*
+do
+	case $arg in
+		exit|for|do|done|if|fi|time)
+			echo "$0: $arg is a shell-builtin" 1>&2
+			exit 1
+			;;
+		-a)	match='' ;;
+		*)	command="$arg"
+	esac
+done
+
+
+for i in `echo $opath | sed '
+	s/^:/.:/
+	s/::/:.:/g
+	s/:$/:./
+	s/:/ /g'`
+do
+	if test -x "$i/$command"
+	then
+		echo "$i/$command"
+		$match
+	fi
+done
+
+echo "$0: $command not found" 1>&2
+exit 1
