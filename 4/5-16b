@@ -1,0 +1,19 @@
+#!/bin/sh
+awk '
+BEGIN {
+	FS=":"
+}
+{
+	if ($3 > highest)
+		highest = $3;
+
+	users[$3]=NR
+}
+END {
+	i=0
+	while (++i)
+		if (!(i in users)) {
+			print i
+			exit
+		}
+}' /etc/passwd

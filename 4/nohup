@@ -1,0 +1,11 @@
+#!/bin/sh
+trap "" 1 15
+
+if test -t 2>&1
+then
+	echo "Sending output to 'nohup.out'"
+	echo "Sending error to 'nohup.err'"
+	exec nice -5 $* >> nohup.out 2>> nohup.err
+else
+	exec nice -5 $*
+fi

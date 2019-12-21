@@ -1,0 +1,13 @@
+#!/bin/sh
+cut -d: -f4 /etc/passwd | \
+	sort -n | \
+	awk '
+	BEGIN {
+		prev=-1
+	}
+	(prev + 1) != $1 {
+		print prev+1; exit
+	}
+	{
+		prev=curr
+	}'
