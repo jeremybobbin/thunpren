@@ -1,0 +1,13 @@
+#!/bin/sh
+
+case $# in 
+	0) echo 'Usage: watchfor person [person [person [...]]]'
+esac
+
+people=`echo $* | sed 's/ /|/g'`
+
+until who | egrep "$people"
+do
+	sleep 60
+done
+
