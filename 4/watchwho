@@ -1,0 +1,16 @@
+#!/bin/sh
+
+t=${1-60}
+
+new=/tmp/wwho1.$$
+old=/tmp/wwho2.$$
+>$old
+
+while :
+do
+	who >$new
+	comm -31 $old $new 2>/dev/null | awk '{ print "in: " $0 }'
+	comm -32 $old $new 2>/dev/null | awk '{ print "out: " $0 }'
+	mv $new $old
+	sleep 1
+done
