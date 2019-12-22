@@ -1,0 +1,13 @@
+#!/bin/sh
+PATH=":$PATH"
+
+IFS='
+'
+
+case $1 in
+	"")	echo "Usage: $0 [-2] pattern" 1>&2; exit 1;;
+	-*)	SIG=$1; shift;;
+esac
+
+ps -ag | head -n 1
+kill $SIG `jerpick \`ps -ag | egrep "$*"\` | awk '{print $1}'`

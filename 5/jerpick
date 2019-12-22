@@ -1,0 +1,8 @@
+#!/bin/sh
+for i
+do
+	echo -n "$i ? " 1>&2
+	if head -n1 | egrep ^y >/dev/null; then
+		echo "$i"
+	fi
+done
