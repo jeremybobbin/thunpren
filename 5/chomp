@@ -1,0 +1,25 @@
+#!/bin/sh
+while test $# -gt 0
+do
+	case $1 in
+		--from|-f)
+			FROM="$2"
+			shift;;
+		--to|-t)
+			TO=$2
+			shift;;
+		*)
+			INPUT="/usr/vc/$1.H";;
+	esac
+	shift
+done
+
+if [ -z "$TO" ]
+then
+	TO=0
+fi
+
+
+awk <$INPUT '(/^@@@/ && (v-- >= '$TO')) ||
+	v < '$FROM' ||
+	!(/^@@@/)' 
