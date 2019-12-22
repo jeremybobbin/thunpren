@@ -9,7 +9,7 @@ new=/tmp/overwr1.$$; old=/tmp/overwr2.$$
 
 trap 'rm -f $new $old; exit 1' 1 2 15
 
-if "$@" >$new
+if eval "$@" >$new
 then
 	cp $file $old
 	trap '' 1 2 15
