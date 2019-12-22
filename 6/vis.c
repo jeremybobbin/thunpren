@@ -2,10 +2,14 @@
 #include <stdlib.h>
 
 int main() {
-	int c;
+	int c, n;
 
-	while ((c = getchar()) != EOF)
+	for (n = 0; (c = getchar()) != EOF; n++)
 	{
+		if (n == 80) {
+			n = 0;
+			putchar('\n');
+		}
 		if (!isprint(c) || c == '\\') {
 			putchar('\\');
 			switch (c) {
