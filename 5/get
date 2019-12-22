@@ -11,7 +11,7 @@ do
 		*)
 			case "$OUTPUT" in
 				"") OUTPUT=$1 ;;
-				*) INPUT=$1.H ;;
+				*) INPUT="/usr/vc/$1.H" ;;
 			esac
 
 
@@ -19,7 +19,7 @@ do
 	shift
 done
 OUTPUT=${OUTPUT?"Usage: $0 [-o outfile] [-i file.H] file"}
-INPUT=${INPUT-$OUTPUT.H}
+INPUT=${INPUT-"/usr/vc/$OUTPUT.H"}
 test -r $INPUT || { echo "$0: no file $INPUT" 1>&2; exit 1; }
 trap 'rm -f /tmp/get.[ab]$$; exit 1' 1 2 15
 sed <$INPUT -n '
