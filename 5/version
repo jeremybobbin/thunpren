@@ -1,0 +1,31 @@
+#!/bin/sh
+
+VERSION=0
+SEARCHSTR='//'
+while [ $# -gt 1 ]
+do
+	case "$1" in
+		-[0-9]*)
+			VERSION="$1" ;;
+		-*)
+			echo "$0: Unkonwn argument $i" 1>&2 ;;
+		*)
+			SEARCHSTR="$SEARCHSTR && /$1/"
+	esac
+	shift
+done
+
+INPUT=${1?"Usage: $0 [-o outfile] [-i file.H] file"}.H
+
+test -r $INPUT || { echo "$0: no file $INPUT" 1>&2; exit 1; }
+
+if [ $VERSION -lt 0 ];
+then
+	awk <$INPUT '
+		BEGIN { v = '$VERSION' }
+		/^@@@/ && !++v'
+else
+	awk <$INPUT '
+	/^@@@/ { v++; $0 = tolower($0) }
+	'"$SEARCHSTR"' { print -v; exit }'
+fi

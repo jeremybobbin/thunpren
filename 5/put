@@ -1,0 +1,32 @@
+#!/bin/sh
+
+case $# in
+	1)	HIST=$1.H ;;
+	*)	echo "Usage: $0 file" 1>&2; exit 1 ;;
+esac
+
+
+if test ! -r $1
+then
+	echo "put: can't open $1" 1>&2
+	exit 1
+fi
+
+trap 'rm -f /tmp/put.[ab]$$; exit 1' 1 2 15
+
+echo -n 'Summary: '
+read Summary
+
+if get -o /tmp/put.a$$ $1
+then
+	cp $1 /tmp/put.b$$
+	echo "@@@ $USER `date` $Summary" >> /tmp/put.b$$
+	diff -e $1 /tmp/put.a$$ >> /tmp/put.b$$
+	sed -n '/^@@@/,$p' <$HIST >>/tmp/put.b$$
+	overwrite $HIST cat /tmp/put.b$$
+else
+	echo "put: creating $HIST"
+	cp $1 $HIST
+	echo "@@@ $USER `date` $Summary" >>$HIST
+fi
+rm -f /tmp/put.[ab]$$
