@@ -16,7 +16,7 @@ FILE *efopen(char *file, char *mode)
 	exit(1);
 }
 
-ttyin()
+char *ttyin()
 {
 	char buf[BUFSIZ];
 	static FILE *tty = NULL;
@@ -30,8 +30,9 @@ ttyin()
 		else if (buf[0] == '!') {
 			system(buf+1);
 			printf("!\n");
+			return "";
 		} else 
-			return buf[0];
+			return buf;
 
 	}
 }
@@ -43,9 +44,9 @@ typedef struct _line {
 } Line;
 
 /* copies lines from fp to buf. buf is ((sizeof char *) * maxline) */
-int ftobuf(Line *curr, FILE *fp)
+Line *ftobuf(Line *curr, FILE *fp)
 {
-	Line *prev;
+	Line *prev = NULL;
 	char line[BUFSIZ];
 	int len;
 
@@ -73,32 +74,65 @@ int ftobuf(Line *curr, FILE *fp)
 		prev = curr;
 		curr = curr->next;
 	}
+	return prev;
 }
 
+Line *printseg(Line *lptr, int pagesize)
+{
+	while ((lptr = lptr->next) && pagesize--) {
+		fputs(lptr->buf, stdout);
+	}
+	while (pagesize-- > 0)
+		putc('\n', stdout);
+	fflush(stdout);
+	return lptr;
+}
+
+#define MIN(a, b) (a) < (b) ? (a) : (b)
+#define MAX(a, b) (a) > (b) ? (a) : (b)
 print(Line *head, int pagesize)
 {
-	static int lineno = 0;
-	Line *lptr;
-	char *buf;
+	Line *lptr = head;
+	static int lineno;
+	int target;
+	lineno = target = 0;
 
-	for (lptr = head; lptr; lptr = lptr->next) {
-		buf = lptr->buf;
-		if (((++lineno) % pagesize) != 0) {
-			fputs(buf, stdout);
-		} else {
-			buf[strlen(buf)-1] = '\0';
-			fputs(buf, stdout);
-			fflush(stdout);
-			ttyin();
+	char *s;
+
+	for (;;) {
+		printseg(lptr, pagesize);
+		s = ttyin();
+		
+		if (*s == 'k')
+			target = MAX(lineno - pagesize, 0);
+		else if (*s == 'j')
+			target = lineno + pagesize;
+		else if (isdigit(*s))
+			target = atoi(s);
+		
+		while (target < lineno && lptr->prev) {
+			lptr = lptr->prev;
+			lineno--;
 		}
+
+		while (target > lineno && lptr->next) {
+			lptr = lptr->next;
+			lineno++;
+		}
+
 	}
 }
+
+
 
 int main(int argc, char *argv[])
 {
 	int i, pagesize = PAGESIZE;
 	FILE *fp;
-	Line lines;
+	Line head, *lptr;
+	lptr = &head;
+
+	head.prev = head.next = head.buf = NULL;
 
 	argv0 = argv[0];
 
@@ -112,18 +146,15 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc == 1)
-	{
-		ftobuf(&lines, stdin);
-		fprintf(stderr, "%s: got %s\n", argv0, lines.buf);
-		fprintf(stderr, "%s: got %s\n", argv0, lines.next->buf);
-		print(&lines, PAGESIZE);
-	}
-	//else
-	//	for (i = 1; i < argc; i++) {
-	//		fp = efopen(argv[i], "r");
-	//		print(fp, pagesize);
-	//		fclose(fp);
-	//	}
+		ftobuf(lptr, stdin);
+	else
+		for (i = 1; i < argc; i++) {
+			fp = efopen(argv[i], "r");
+			lptr = ftobuf(lptr, fp);
+			fclose(fp);
+		}
+
+	print(&head, pagesize);
 
 	exit(0);
 }
