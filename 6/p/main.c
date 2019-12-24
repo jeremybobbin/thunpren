@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
 #define	PAGESIZE	22
 char	*argv0;
@@ -36,28 +36,69 @@ ttyin()
 	}
 }
 
-print(FILE *fp, int pagesize)
-{
-	static int lines = 0;
-	char buf[BUFSIZ];
+typedef struct _line {
+	char *buf;
+	struct _line *next;
+	struct _line *prev;
+} Line;
 
-	while (fgets(buf, sizeof buf, fp) != NULL)
-		if (++lines < pagesize)
+/* copies lines from fp to buf. buf is ((sizeof char *) * maxline) */
+int ftobuf(Line *curr, FILE *fp)
+{
+	Line *prev;
+	char line[BUFSIZ];
+	int len;
+
+	while (fgets(line, sizeof line, fp) != NULL) {
+		if (curr == NULL && ((curr = malloc(sizeof Line)) == NULL)) {
+			fprintf(stderr, "Could not alloc line\n");
+			exit(1);
+		}
+		if (prev)
+		{
+			curr->prev = prev;
+			prev->next = curr;
+		}
+
+		curr->next = NULL;
+
+		len = strlen(line);
+		if ((curr->buf = (char *)malloc(len)) == NULL) {
+			fprintf(stderr, "Could not alloc line buf\n");
+			exit(1);
+		}
+
+		strcpy(curr->buf, line);
+
+		prev = curr;
+		curr = curr->next;
+	}
+}
+
+print(Line *head, int pagesize)
+{
+	static int lineno = 0;
+	Line *lptr;
+	char *buf;
+
+	for (lptr = head; lptr; lptr = lptr->next) {
+		buf = lptr->buf;
+		if (((++lineno) % pagesize) != 0) {
 			fputs(buf, stdout);
-		else {
+		} else {
 			buf[strlen(buf)-1] = '\0';
 			fputs(buf, stdout);
 			fflush(stdout);
 			ttyin();
-			lines = 0;
 		}
-			
+	}
 }
 
 int main(int argc, char *argv[])
 {
 	int i, pagesize = PAGESIZE;
 	FILE *fp;
+	Line lines;
 
 	argv0 = argv[0];
 
@@ -71,13 +112,18 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc == 1)
-		print(stdin, PAGESIZE);
-	else
-		for (i = 1; i < argc; i++) {
-			fp = efopen(argv[i], "r");
-			print(fp, pagesize);
-			fclose(fp);
-		}
+	{
+		ftobuf(&lines, stdin);
+		fprintf(stderr, "%s: got %s\n", argv0, lines.buf);
+		fprintf(stderr, "%s: got %s\n", argv0, lines.next->buf);
+		print(&lines, PAGESIZE);
+	}
+	//else
+	//	for (i = 1; i < argc; i++) {
+	//		fp = efopen(argv[i], "r");
+	//		print(fp, pagesize);
+	//		fclose(fp);
+	//	}
 
 	exit(0);
 }
