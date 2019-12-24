@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -145,8 +146,13 @@ int main(int argc, char *argv[])
 		argv++;
 	}
 
-	if (argc == 1)
+	if (argc == 1) {
+		if (isatty(0)) {
+			fprintf(stderr, "%s: looks like stdin is a TTY\n", argv0);
+			exit(1);
+		}
 		ftobuf(lptr, stdin);
+	}
 	else
 		for (i = 1; i < argc; i++) {
 			fp = efopen(argv[i], "r");
