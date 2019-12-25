@@ -52,7 +52,7 @@ Line *ftobuf(Line *curr, FILE *fp)
 	int len;
 
 	while (fgets(line, sizeof line, fp) != NULL) {
-		if (curr == NULL && ((curr = malloc(sizeof Line)) == NULL)) {
+		if (curr == NULL && ((curr = malloc(sizeof(Line))) == NULL)) {
 			fprintf(stderr, "Could not alloc line\n");
 			exit(1);
 		}

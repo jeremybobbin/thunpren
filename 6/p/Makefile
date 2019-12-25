@@ -4,4 +4,4 @@ run: $(PROGNAME)
 	./$(PROGNAME)
 
 $(PROGNAME): main.c
-	tcc main.c -lm -o $(PROGNAME)
+	gcc -g main.c -lm -o $(PROGNAME)
