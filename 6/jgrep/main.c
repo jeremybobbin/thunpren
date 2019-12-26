@@ -8,14 +8,16 @@
 char	*argv0;
 char	*ps = "ps -ag";
 
-strindex(char *s, char *t) {
-	int i, n;
+int jstrstr(char *s, char *t, int slen, int tlen) {
+	int i;
+	if (tlen > slen)
+		return 0;
 
-	n = strlen(t);
-	for (i = 0; s[i]; i++)
-		if (strncmp(s+i, t, n) == 0)
+	for (i = 0; s[i] && (slen - i) >= tlen; i++)
+		if (strncmp(s+i, t, tlen) == 0)
 			return 1;
-	return -1;
+
+	return 0;
 }
 
 FILE *efopen(char *file, char *mode)
@@ -30,10 +32,14 @@ FILE *efopen(char *file, char *mode)
 }
 
 int fgrep(FILE *fp, char *searchstr) {
+	int sslen, fslen;
 	char buf[BUFSIZ];
-	while (fgets(buf, sizeof buf, fp))
-		if (strindex(buf, searchstr) >= 0)
+	sslen = strlen(searchstr);
+	while (fgets(buf, sizeof buf, fp)) {
+		fslen = strlen(buf);
+		if (jstrstr(buf, searchstr, sslen, fslen))
 			fputs(buf, stdout);
+	}
 }
 
 int main(int argc, char *argv[])
