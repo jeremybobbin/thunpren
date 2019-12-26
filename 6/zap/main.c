@@ -70,11 +70,17 @@ int main(int argc, char *argv[])
 		for (i = 1; i < argc; i++) 
 			if (strindex(buf, argv[i]) >= 0) {
 				buf[strlen(buf)-1] = '\0';
+
+				sscanf(buf, "%d", &pid);
+
+				/* don't prompt to kill $0s PID */
+				if (getpid() == pid) 
+					break; 
+
 				fprintf(stderr, "%s? ", buf);
-				if (ttyin() == 'y') {
-					sscanf(buf, "%d", &pid);
+				if (ttyin() == 'y')
 					kill(pid, SIGKILL);
-				}
+
 				break; /* if one search string matches a process name,
 					  don't bother showing process again */
 			}
