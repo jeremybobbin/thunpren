@@ -39,7 +39,7 @@ int fgrep(FILE *fp, char *searchstr) {
 int main(int argc, char *argv[])
 {
 	FILE *fp;
-	char buf[BUFSIZ], *searchstr;
+	char *searchstr;
 
 	argv0 = *argv++; argc--;
 	if (argc == 0) {
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 			fgrep(fp, searchstr);
 		}
 	else
-		fgrep(fp, searchstr);
+		fgrep(stdin, searchstr);
 
 
 	exit(0);
