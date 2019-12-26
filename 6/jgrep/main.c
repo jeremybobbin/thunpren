@@ -34,10 +34,8 @@ FILE *efopen(char *file, char *mode)
 int fgrep(FILE *fp, char *searchstr) {
 	int sslen, fslen;
 	char buf[BUFSIZ];
-	sslen = strlen(searchstr);
 	while (fgets(buf, sizeof buf, fp)) {
-		fslen = strlen(buf);
-		if (jstrstr(buf, searchstr, sslen, fslen))
+		if (strstr(buf, searchstr))
 			fputs(buf, stdout);
 	}
 }
