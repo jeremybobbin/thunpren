@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 {
 	FILE *fin;
 	char buf[BUFSIZ];
-	int pid;
+	int pid, i;
 
 	argv0 = argv[0];
 
@@ -67,14 +67,17 @@ int main(int argc, char *argv[])
 	fgets(buf, sizeof buf, fin);
 	fprintf(stdin, "%s", buf);
 	while (fgets(buf, sizeof buf, fin) != NULL) {
-		if (argc == 1 || strindex(buf, argv[1]) >= 0) {
-			buf[strlen(buf)-1] = '\0';
-			fprintf(stderr, "%s? ", buf);
-			if (ttyin() == 'y') {
-				sscanf(buf, "%d", &pid);
-				kill(pid, SIGKILL);
+		for (i = 1; i < argc; i++) 
+			if (strindex(buf, argv[i]) >= 0) {
+				buf[strlen(buf)-1] = '\0';
+				fprintf(stderr, "%s? ", buf);
+				if (ttyin() == 'y') {
+					sscanf(buf, "%d", &pid);
+					kill(pid, SIGKILL);
+				}
+				break; /* if one search string matches a process name,
+					  don't bother showing process again */
 			}
-		}
 	}
 	exit(0);
 }
