@@ -20,6 +20,18 @@ FILE *efopen(char *file, char *mode)
 	exit(1);
 }
 
+FILE *epopen(char *cmd, char *mode)
+{
+	FILE *pp;
+
+	if ((pp = popen(cmd, mode)) != NULL)
+		return pp;
+	fprintf(stderr, "%s: can't open pipe to '%s' in mode %s\n",
+			argv0, cmd, mode);
+	exit(1);
+}
+
+
 void nskip(FILE *fin, int n)
 {
 	char buf[BUFSIZ];
