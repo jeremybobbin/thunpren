@@ -8,7 +8,7 @@
 #define HUGE	100000
 
 char	*argv0;
-
+char *editor = "ed";
 
 
 
@@ -128,7 +128,7 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 					fprintf(ft, "---\n");
 					ncopy(f2, to2+1-from2, ft);
 					fclose(ft);
-					sprintf(buf2, "ed %s", tempfile);
+					sprintf(buf2, "%s %s", editor, tempfile);
 					system(buf2);
 					ft = efopen(tempfile, "r");
 					ncopy(ft, HUGE, fout);
@@ -165,7 +165,6 @@ int main(int argc, char *argv[])
 	FILE *fin, *fout, *f1, *f2;
 	char buf[BUFSIZ];
 	char diffargs[BUFSIZ] = "";
-	char *editor;
 
 	argv0 = *argv;
 	while (argc > 1 && argv[1][0] == '-') {
