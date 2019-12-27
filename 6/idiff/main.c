@@ -9,6 +9,11 @@
 
 char	*argv0;
 
+
+
+
+
+
 FILE *efopen(char *file, char *mode)
 {
 	FILE *fp;
@@ -150,21 +155,43 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 	unlink(tempfile);
 }
 
+void usage() {
+	fprintf(stderr, "Usage: %s file1 file2\n", argv0);
+	exit(1);
+}
 
 int main(int argc, char *argv[])
 {
 	FILE *fin, *fout, *f1, *f2;
 	char buf[BUFSIZ];
+	char diffargs[BUFSIZ] = "";
+	char *editor;
 
 	argv0 = *argv;
+	while (argc > 1 && argv[1][0] == '-') {
+		switch (argv[1][1]) {
+			case 'e': 
+				if (argc < 3)
+					usage();
+				editor = argv[2];
+				break;
+			default:
+				strcat(diffargs, " ");
+				strcat(diffargs, argv[1]);
+				break;
+		}
+		argc--;
+		argv++;
+	}
 	if (argc != 3) {
-		fprintf(stderr, "Usage: %s file1 file2\n", argv0);
-		exit(1);
+		usage();
 	}
 	f1 = efopen(argv[1], "r");
 	f2 = efopen(argv[2], "r");
 	fout = efopen("idiff.out", "w");
-	sprintf(buf, "diff %s %s", argv[1], argv[2]);
+	sprintf(buf, "diff %s %s %s", diffargs, argv[1], argv[2]);
+	printf("COMMAND: %s\n",buf );
+
 	fin = epopen(buf, "r");
 	idiff(f1, f2, fin, fout);
 	pclose(fin);
