@@ -78,6 +78,7 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 	char tempfile[] = "idiff.XXXXXX";
 	char buf[BUFSIZ], buf2[BUFSIZ];
 	FILE *ft;
+	char rest = '\0';
 	int cmd, n, from1, to1, from2, to2, nf1, nf2;
 
 	mktemp(tempfile);
@@ -100,7 +101,12 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 		do {
 			printf("? ");
 			fflush(stdout);
-			fgets(buf, sizeof buf, stdin);
+
+			if (rest)
+				buf[0] = rest;
+			else
+				fgets(buf, sizeof buf, stdin);
+
 			switch (buf[0]) {
 				case '>':
 					nskip(f1, to1-nf1);
@@ -126,6 +132,12 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 					system(buf+1);
 					printf("!\n");
 					break;
+				case 'q':
+					if (buf[1] == '<' || buf[1] == '>') {
+						rest = buf[1];
+						break;
+					}
+					/* FALLTHROUGH */
 				default:
 					printf("< or > or e or !\n");
 					break;
