@@ -143,7 +143,6 @@ int main(int argc, char *argv[])
 {
 	FILE *fin, *fout, *f1, *f2;
 	char buf[BUFSIZ];
-	char diffout[] = "idiff.XXXXXX";
 
 	argv0 = *argv;
 	if (argc != 3) {
@@ -153,12 +152,10 @@ int main(int argc, char *argv[])
 	f1 = efopen(argv[1], "r");
 	f2 = efopen(argv[2], "r");
 	fout = efopen("idiff.out", "w");
-	mktemp(diffout);
-	sprintf(buf, "diff %s %s >%s", argv[1], argv[2], diffout);
-	system(buf);
-	fin = efopen(diffout, "r");
+	sprintf(buf, "diff %s %s", argv[1], argv[2]);
+	fin = epopen(buf, "r");
 	idiff(f1, f2, fin, fout);
-	unlink(diffout);
+	pclose(fin);
 	printf("%s: output in file idiff.out\n", argv0);
 	exit(0);
 }
