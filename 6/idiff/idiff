@@ -1,0 +1,25 @@
+#!/bin/sh
+for i
+do
+	case i in
+		-*) args="$args $i";;
+		*) 
+			if [ -z "$file1" ]; then
+				file1="$i"
+			else
+				file2="$i"
+			fi
+
+	esac
+done
+
+if [ -d "$file1" ]; then
+	file1="$file1/$file2"
+fi
+
+if [ -d "$file2" ]; then
+	file2="$file2/$file1"
+fi
+
+
+./idiff $args $file1 $file2

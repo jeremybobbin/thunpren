@@ -1,4 +1,4 @@
-PROGNAME='idiff'
+PROGNAME='idiff.elf'
 
 run: $(PROGNAME)
 	./$(PROGNAME)
