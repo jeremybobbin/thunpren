@@ -22,4 +22,4 @@ if [ -d "$file2" ]; then
 fi
 
 
-./idiff $args $file1 $file2
+./idiff.elf $args $file1 $file2
