@@ -1,0 +1,2 @@
+#!/bin/sh
+pr -$0 -t -l "$PAGESIZE" $*
