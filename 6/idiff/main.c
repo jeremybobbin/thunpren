@@ -8,11 +8,7 @@
 #define HUGE	100000
 
 char	*argv0;
-char *editor = "ed";
-
-
-
-
+char *editor;
 
 FILE *efopen(char *file, char *mode)
 {
@@ -125,6 +121,7 @@ void idiff(FILE *f1, FILE *f2, FILE *fin, FILE *fout)
 					ncopy(f1, from1-1-nf1, fout);
 					nskip(f2, from2-1-nf2);
 					ft = efopen(tempfile, "w");
+					ncopy(f1, to1+1-from1, ft);
 					fprintf(ft, "---\n");
 					ncopy(f2, to2+1-from2, ft);
 					fclose(ft);
@@ -168,20 +165,15 @@ int main(int argc, char *argv[])
 
 	argv0 = *argv;
 	while (argc > 1 && argv[1][0] == '-') {
-		switch (argv[1][1]) {
-			case 'e': 
-				if (argc < 3)
-					usage();
-				editor = argv[2];
-				break;
-			default:
-				strcat(diffargs, " ");
-				strcat(diffargs, argv[1]);
-				break;
-		}
+		strcat(diffargs, " ");
+		strcat(diffargs, argv[1]);
 		argc--;
 		argv++;
 	}
+
+	if ((editor=getenv("EDITOR")) == NULL)
+		editor="ed";
+
 	if (argc != 3) {
 		usage();
 	}
