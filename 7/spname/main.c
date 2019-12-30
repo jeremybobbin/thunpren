@@ -133,11 +133,17 @@ int print(Line *head, int pagesize)
 
 #define EQ(s, t) (strcmp(s, t) == 0)
 int spdist(char *s, char *t) {
+	int i = 0;
 	/* ex before: s = "ab", t = "ac" */
-	while (*s++ == *t)
+	while (*s++ == *t) {
+		i++;
 		if (*t++ == '\0')
 			return 0;
+	}
 	/* after: s = s+3, t = s+2 */
+
+	if (i >= 3 && !*t) /* prefix */
+		return 3;
 
 	/* s = spaghett */
 	if (*--s) {
@@ -155,10 +161,11 @@ int spdist(char *s, char *t) {
 		if (EQ(s+1, t))
 			return 2; /* extra character */
 	}
+
 	/* spahett */
 	if (*t && EQ(s, t+1))
 		return 2;	/* missing character */
-	return 3;
+	return 4;
 }
 
 int mindist(char *dir, char *guess, char *best) {
@@ -172,7 +179,7 @@ int mindist(char *dir, char *guess, char *best) {
 	while ((nbuf=readdir(dp)) != NULL)
 		if (nbuf->d_ino) {
 			nd = spdist(nbuf->d_name, guess);
-			if (nd <= d && nd != 3) {
+			if (nd <= d && nd != 4) {
 				strcpy(best, nbuf->d_name);
 				d = nd;
 				if (d == 0)
@@ -199,7 +206,7 @@ int spname(char *oldname, char *newname) {
 			if (p < guess+DIRSIZ)
 				*p++ = *old;
 		*p = '\0';
-		if (mindist(newname, guess, best) >= 3)
+		if (mindist(newname, guess, best) >= 4)
 			return -1; /* hopeless */
 
 		for (p = best; *new = *p++; )
