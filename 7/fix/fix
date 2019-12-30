@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ $# -lt 1 ]; then
+	echo "Usage" 1>&2
+fi
+
+prg=$1; shift
+$prg $(./correct $*)
