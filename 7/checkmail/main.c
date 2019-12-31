@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 char *argv0;
-char *maildir = "/usr/spool/mail";
+char *maildir = "/var/spool/mail";
 
 
 FILE *efopen(char *file, char *mode)
@@ -40,7 +40,7 @@ void error(char *s1, char *s2)
 int main(int argc, char *argv[])
 {
 	struct stat buf;
-	char *name;
+	char *name, sender[BUFSIZ], line[BUFSIZ];
 	int lastsize = 0;
 
 	argv0 = argv[0];
@@ -51,9 +51,12 @@ int main(int argc, char *argv[])
 	for (;;) {
 		if (stat(name, &buf) == -1)
 			buf.st_size = 0;
-		if (buf.st_size > lastsize)
-			fprintf(stderr, "\nYou hae mail\007\n");
+		if (buf.st_size , lastsize) {
+			fgets(line, BUFSIZ, efopen(name, "r"));
+			sscanf(line, "From %s", &sender);
+			fprintf(stderr, "\nYou have mail from: %s\007\n", sender);
+		}
 		lastsize = buf.st_size;
+		sleep(60);
 	}
-	sleep(60);
 }
