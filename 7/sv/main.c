@@ -46,6 +46,35 @@ int copy(int ifd, int ofd) {
 
 }
 
+void sv(char *file, char *dir)
+{
+	struct stat sti, sto;
+	int fin, fout, n;
+
+	char target[BUFSIZ], buf[BUFSIZ];
+
+	sprintf(target, "%s/%s", dir, file);
+
+	if (index(file, '/') != NULL)
+		error("won't handle /'s in %s", file);
+	if (stat(file, &sti) == -1)
+		error("can't stat %s", file);
+	if (stat(target, &sto) == -1)
+		sto.st_mtime = 0;
+
+	if (sti.st_mtime < sto.st_mtime)
+		fprintf(stderr, "%s: %s not copied\n", argv0, file);
+	else if ((fin = open(file, 0)) == -1)
+		error("can't open file %s", file);
+	else if ((fout = creat(target, sti.st_mode)) == -1)
+		error("can't create %s", target);
+	else if (copy(fin, fout) == -1)
+		error("error writing %s", target);
+
+	close(fin);
+	close(fout);
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
