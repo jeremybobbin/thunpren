@@ -35,6 +35,17 @@ void error(char *s1, char *s2)
 	fprintf(stderr, "\n");
 }
 
+void die(char *s1, char *s2)
+{
+	if (argv0)
+		fprintf(stderr, "%s: ", argv0);
+
+	fprintf(stderr, s1, s2);
+	if (errno > 0 && errno < sys_nerr)
+		fprintf(stderr, " (%s)", sys_errlist[errno]);
+	fprintf(stderr, "\n");
+}
+
 int copy(int ifd, int ofd) {
 	int n;
 	char buf[BUFSIZ];
@@ -45,7 +56,28 @@ int copy(int ifd, int ofd) {
 
 }
 
-void sv(char *file, char *dir)
+void recurse(char *from, char *to, void (*fn)(char *, char*))
+{
+	DIR *dp;
+	struct dirent *dep;
+	struct stat stbuf;
+	char pathbuf[BUFSIZ];
+
+	if (stat(from, &stbuf) == -1)
+		return;
+	if ((stbuf.st_mode & S_IFMT) != S_IFDIR)
+		fn(from, to);
+
+	if ((dp=opendir(from)) == NULL)
+		return;
+	while((dep = readdir(dp)) != NULL) {
+		sprintf(pathbuf, "%s/%s", from, dep->d_name);
+		recurse(pathbuf, to, fn);
+	}
+
+}
+
+int sv(char *file, char *dir)
 {
 	struct stat sti, sto;
 	int fin, fout, n;
@@ -93,11 +125,13 @@ int main(int argc, char *argv[])
 
 	argv0 = *argv;
 	if (argc <= 2)
-		error("Usage: %s files ... dir", argv0);
+		die("Usage: %s files ... dir", argv0);
 	if (stat(dir, &stbuf) == -1)
-		error("can't access dirctory %s", dir);
+		die("can't access dirctory %s", dir);
+	if ((stbuf.st_mode & S_IFMT) != S_IFDIR)
+		die("%s is not a directory", dir);
 	for (i = 1; i < argc-1; i++)
-		sv(argv[i], dir);
+		recurse(argv[i], dir, sv);
 
 	exit(1);
 
