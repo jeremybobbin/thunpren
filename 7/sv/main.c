@@ -56,61 +56,79 @@ int copy(int ifd, int ofd) {
 
 }
 
-void recurse(char *from, char *to, void (*fn)(char *, char*))
+void dirwalk(char *from, char *to, void (*fn)(char *, char*))
 {
 	DIR *dp;
 	struct dirent *dep;
 	struct stat stbuf;
 	char pathbuf[BUFSIZ];
 
-	if (stat(from, &stbuf) == -1)
-		return;
-	if ((stbuf.st_mode & S_IFMT) != S_IFDIR)
-		fn(from, to);
-
 	if ((dp=opendir(from)) == NULL)
 		return;
 	while((dep = readdir(dp)) != NULL) {
+		if (dep->d_name[0] == '.' && !dep->d_name[1] ||
+				strcmp(dep->d_name, "..") == 0)
+			continue;
+
 		sprintf(pathbuf, "%s/%s", from, dep->d_name);
-		recurse(pathbuf, to, fn);
+		fn(pathbuf, to);
 	}
 
 }
 
-int sv(char *file, char *dir)
+char *basename(char *s)
+{
+	int i;
+	/*  sets i to last '/' */
+	for (i = strlen(s); s[i] != '/' && i >= 0; i--);
+	return s+i+1;
+}
+
+void dirname(char *s)
+{
+	int i;
+	for (i = strlen(s); s[i] != '/' && i >= 0; i--);
+	s[i] = '\0';
+}
+
+void sv(char *file, char *dir)
 {
 	struct stat sti, sto;
 	int fin, fout, n;
 
 	char target[BUFSIZ], buf[BUFSIZ];
 
-	sprintf(target, "%s/%s", dir, file);
+	sprintf(target, "%s/%s", dir, basename(file));
 
-	if (index(file, '/') != NULL) {
-		error("won't handle /'s in %s", file);
-		return -1;
-	}
+	//if (index(file, '/') != NULL) {
+	//	error("won't handle /'s in %s", file);
+	//	return;
+	//}
 	if (stat(file, &sti) == -1) {
 		error("can't stat %s", file);
-		return -1;
+		return;
 	}
-	if (stat(target, &sto) == -1) {
+	if (stat(target, &sto) == -1)
 		sto.st_mtime = 0;
-		return -1;
-	}
+
+
 
 	if (sti.st_mtime < sto.st_mtime) {
 		fprintf(stderr, "%s: %s not copied\n", argv0, file);
-		return -1;
+		return;
+	} else if ((sti.st_mode & S_IFMT) == S_IFDIR) {
+		mkdir(target, sti.st_mode);
+		dirwalk(file, target, sv);
+		return;
 	} else if ((fin = open(file, 0)) == -1) {
 		error("can't open file %s", file);
-		return -1;
+		return;
 	} else if ((fout = creat(target, sti.st_mode)) == -1) {
 		error("can't create %s", target);
-		return -1;
+		return;
 	} else if (copy(fin, fout) == -1) {
 		error("error writing %s", target);
-		return -1;
+		return;
 	}
 
 	close(fin);
@@ -131,7 +149,7 @@ int main(int argc, char *argv[])
 	if ((stbuf.st_mode & S_IFMT) != S_IFDIR)
 		die("%s is not a directory", dir);
 	for (i = 1; i < argc-1; i++)
-		recurse(argv[i], dir, sv);
+		sv(argv[i], dir);
 
 	exit(1);
 
