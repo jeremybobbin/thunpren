@@ -41,22 +41,29 @@ int main(int argc, char *argv[])
 {
 	struct stat buf;
 	char *name, sender[BUFSIZ], line[BUFSIZ];
+	FILE *fp;
 	int lastsize = 0;
-
 	argv0 = argv[0];
+
 	if ((name = getlogin()) == NULL)
 		error("can't get login name", (char *) 0);
 	if (chdir(maildir) == -1)
 		error("can't cd to %s", maildir);
+
+	fp = efopen(name, "r");
+
 	for (;;) {
 		if (stat(name, &buf) == -1)
 			buf.st_size = 0;
-		if (buf.st_size , lastsize) {
-			fgets(line, BUFSIZ, efopen(name, "r"));
+		if (buf.st_size, lastsize) {
+			fgets(line, BUFSIZ, fp);
 			sscanf(line, "From %s", &sender);
 			fprintf(stderr, "\nYou have mail from: %s\007\n", sender);
+			fseek(fp, 0L, SEEK_SET);
 		}
 		lastsize = buf.st_size;
 		sleep(60);
 	}
+
+	fclose(fp);
 }
