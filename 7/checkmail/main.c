@@ -40,17 +40,16 @@ void error(char *s1, char *s2)
 int main(int argc, char *argv[])
 {
 	struct stat buf;
-	char *name, sender[BUFSIZ], line[BUFSIZ];
+	char *name, sender[BUFSIZ], line[BUFSIZ], fname[BUFSIZ];
 	FILE *fp;
 	int lastsize = 0;
 	argv0 = argv[0];
 
 	if ((name = getlogin()) == NULL)
 		error("can't get login name", (char *) 0);
-	if (chdir(maildir) == -1)
-		error("can't cd to %s", maildir);
 
-	fp = efopen(name, "r");
+	sprintf(fname, "%s/%s", maildir, name);
+	fp = efopen(fname, "r");
 
 	for (;;) {
 		if (stat(name, &buf) == -1)
