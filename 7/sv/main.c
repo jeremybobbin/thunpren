@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		error("Usage: %s files ... dir", argv0);
 	if (stat(dir, &stbuf) == -1)
 		error("can't access dirctory %s", dir);
-	for (i = 1; i < argc; i++)
+	for (i = 1; i < argc-1; i++)
 		sv(argv[i], dir);
 
 	exit(1);
