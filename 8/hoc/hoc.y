@@ -3,19 +3,22 @@
 %}
 %token NUMBER
 %left  '+' '-'
-%left  '*' '/'
+%left  '*' '/' '%'
 %left  UNARYMINUS
+%left  UNARYPLUS
 %%
 list:
     | list '\n'
     | list expr '\n' { printf("\t%.8g\n", $2); }
     ;
 expr:	NUMBER
+    | '+' expr %prec UNARYPLUS { $$ = $2 < 0 ? ($2 * -1) : $2; }
     | '-' expr %prec UNARYMINUS { $$ = -$2; }
     | expr '+' expr { $$ = $1 + $3; }
     | expr '-' expr { $$ = $1 - $3; }
     | expr '*' expr { $$ = $1 + $3; }
     | expr '/' expr { $$ = $1 / $3; }
+    | expr '%' expr { $$ = $1 - ($3 * (int)($1/$3)); }
     | '(' expr ')'  { $$ = $2; }
     ;
 %%
