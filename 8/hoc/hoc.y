@@ -8,9 +8,11 @@ double mem[26];
 %union {
 	double  val;
 	Symbol  *sym;
+	char 	*cmd;
 }
 %token <val>   NUMBER
 %token <sym> VAR BLTIN UNDEF
+%token <cmd>   CMD
 %type <val>   expr asgn
 %left  '+' '-'
 %left  '*' '/' '%'
@@ -23,6 +25,7 @@ list:
 	| list asgn
 	| list expr { printf("\t%.8g\n", $2); }
 	| list error { yyerrok; }
+	| list CMD { system($2); }
 	;
 asgn:	VAR '=' expr { lastreg = $$=$1->u.val=$3; $1->type = VAR; }
     ;
@@ -89,10 +92,15 @@ yylex()
 		scanf("%lf", &yylval.val);
 		return NUMBER;
 	}
-	//if (islower(c)) {
-	//	yylval.index = c - 'a';
-	//	return VAR;
-	//}
+	if (c == '!') {
+		char sbuf[BUFSIZ], *p = sbuf;
+		while ((c=getchar()) != EOF && c != '\n') {
+			*p++ = c;
+		}
+		ungetc(c, stdin);
+		yylval.cmd = sbuf;
+		return CMD;
+	}
 	if (isalpha(c)) {
 		Symbol *s;
 		char sbuf[100], *p = sbuf;
