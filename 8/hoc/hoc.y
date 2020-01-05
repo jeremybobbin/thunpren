@@ -16,8 +16,9 @@ double mem[26];
 %%
 list:
 	| list '\n'
-	| list expr '\n' { printf("\t%.8g\n", $2); }
-	| list error '\n' { yyerrok; }
+	| list ';' list
+	| list expr { printf("\t%.8g\n", $2); }
+	| list error { yyerrok; }
 	;
 expr:	NUMBER
 	| VAR { $$ = mem[$1]; }
