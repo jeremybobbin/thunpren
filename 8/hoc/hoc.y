@@ -1,5 +1,6 @@
 %{
 double mem[26];
+#define lastreg (mem['p' - 'a'])
 %}
 %union {
 	double  val;
@@ -20,19 +21,19 @@ list:
 	;
 expr:	NUMBER
 	| VAR { $$ = mem[$1]; }
-	| VAR '=' expr { $$ = mem[$1] = $3; }
-	| expr '+' expr { $$ = $1 + $3; }
-	| expr '-' expr { $$ = $1 - $3; }
-	| expr '*' expr { $$ = $1 + $3; }
+	| VAR '=' expr { lastreg = $$ = mem[$1] = $3; }
+	| expr '+' expr { lastreg = $$ = $1 + $3; }
+	| expr '-' expr { lastreg = $$ = $1 - $3; }
+	| expr '*' expr { lastreg = $$ = $1 + $3; }
 	| expr '/' expr {
 		if ($3 == 0.0)
 			execerror("division by zero", "");
-		$$ = $1 / $3;
+		lastreg = $$ = $1 / $3;
 	}
-	| expr '%' expr { $$ = $1 - ($3 * (int)($1/$3)); }
-	| '(' expr ')'  { $$ = $2; }
-	| '+' expr %prec UNARYPLUS { $$ = $2 < 0 ? ($2 * -1) : $2; }
-	| '-' expr %prec UNARYMINUS { $$ = -$2; }
+	| expr '%' expr { lastreg = $$ = $1 - ($3 * (int)($1/$3)); }
+	| '(' expr ')'  { lastreg = $$ = $2; }
+	| '+' expr %prec UNARYPLUS { lastreg = $$ = $2 < 0 ? ($2 * -1) : $2; }
+	| '-' expr %prec UNARYMINUS { lastreg = $$ = -$2; }
 	;
 %%
 
