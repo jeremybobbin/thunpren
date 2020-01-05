@@ -31,7 +31,9 @@ expr:	NUMBER
 			execerror("undefined variable", $1->name);
 		$$ = $1->u.val; }
 	| asgn
+	| BLTIN '(' ')'  { $$ = (*($1->u.ptr))();}
 	| BLTIN '(' expr ')'  { $$ = (*($1->u.ptr))($3);}
+	| BLTIN '(' expr ',' expr ')'  { $$ = (*($1->u.ptr))($3, $5);}
 	| expr '+' expr { lastreg = $$ = $1 + $3; }
 	| expr '-' expr { lastreg = $$ = $1 - $3; }
 	| expr '*' expr { lastreg = $$ = $1 + $3; }

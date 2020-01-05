@@ -1,8 +1,8 @@
+#include <math.h>
 #include "hoc.h"
 #include "y.tab.h"
-#include <math.h>
 
-extern double Log(), Log10(), Exp(), Sqrt(), integer();
+extern double Log(), Log10(), Exp(), Sqrt(), frand(), integer();
 static struct {
 	char *name;
 	double cval;
@@ -18,17 +18,19 @@ static struct {
 	char *name;
 	double (*fn)();
 } builtins[] = {
-	"sin",	sin,
-	"cos",	cos,
-	"tan",	tan,
-	"atan",	atan,
-	"log",	Log,
-	"log10",Log10,
-	"exp",	Exp,
-	"sqrt",	Sqrt,
-	"int",	integer,
-	"abs",	fabs,
-	0,      0
+	"sin",    sin,
+	"cos",    cos,
+	"tan",    tan,
+	"atan",   atan,
+	"atan2",  atan,
+	"log",    Log,
+	"log10",  Log10,
+	"exp",    Exp,
+	"sqrt",   Sqrt,
+	"rand",   frand,
+	"int",    integer,
+	"abs",    fabs,
+	0,        0
 };
 
 init()

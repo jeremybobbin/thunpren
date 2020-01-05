@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdlib.h>
 #include <errno.h>
 extern int errno;
 double errcheck();
@@ -26,6 +27,11 @@ double Sqrt(double x)
 double Pow(double x, double y)
 {
 	return errcheck(pow(x, y), "exponentiation");
+}
+
+double frand()
+{
+	return (double) rand() / (double) RAND_MAX;
 }
 
 double integer(double x)
