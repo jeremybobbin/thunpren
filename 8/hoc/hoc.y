@@ -1,57 +1,44 @@
 %{
-#include <stdio.h>
 #include "hoc.h"
 extern double Pow();
 double mem[26];
-#define lastreg (mem['p' - 'a'])
+#define code2(c1, c2)     code(c1); code(c2)
+#define code3(c1, c2, c3) code(c1); code(c2); code(c3);
 %}
 %union {
-	double  val;
 	Symbol  *sym;
-	char 	*cmd;
+	Inst    *inst;
 }
-%token <val>   NUMBER
-%token <sym> VAR BLTIN UNDEF
-%token <cmd>   CMD
-%type <val>   expr asgn
+%token <sym> NUMBER VAR BLTIN UNDEF
+//%type <val>   expr asgn
 %left  '+' '-'
 %left  '*' '/' '%'
 %left  UNARYMINUS
 %left  UNARYPLUS
+%left '^'
 %%
 list:
 	| list '\n'
 	| list ';' list
-	| list asgn
-	| list expr { printf("\t%.8g\n", $2); }
+	| list asgn { code2(pop, STOP); return 1; }
+	| list expr { code2(print, STOP); return 1; }
 	| list error { yyerrok; }
-	| list CMD { system($2); }
 	;
-asgn:	VAR '=' expr { lastreg = $$=$1->u.val=$3; $1->type = VAR; }
-    ;
-expr:	NUMBER
-	| VAR { if ($1->type == UNDEF)
-			execerror("undefined variable", $1->name);
-		$$ = $1->u.val; }
+asgn:	VAR '=' expr { code3(varpush, (Inst)$1, assign); }
+	;
+expr:	  NUMBER { code2(constpush, (Inst)$1); }
+	| VAR    { code3(varpush, (Inst)$1, eval); }
 	| asgn
-	| BLTIN '(' ')'  { $$ = (*($1->u.ptr))();}
-	| BLTIN '(' expr ')'  { $$ = (*($1->u.ptr))($3);}
-	| BLTIN '(' expr ',' expr ')'  { $$ = (*($1->u.ptr))($3, $5);}
-	| expr '+' expr { lastreg = $$ = $1 + $3; }
-	| expr '-' expr { lastreg = $$ = $1 - $3; }
-	| expr '*' expr { lastreg = $$ = $1 + $3; }
-	| expr '/' expr {
-		if ($3 == 0.0)
-			execerror("division by zero", "");
-		lastreg = $$ = $1 / $3;
-	}
-	| expr '%' expr { lastreg = $$ = $1 - ($3 * (int)($1/$3)); }
-	| '(' expr ')'  { lastreg = $$ = $2; }
-	| '+' expr %prec UNARYPLUS { lastreg = $$ = $2 < 0 ? ($2 * -1) : $2; }
-	| '-' expr %prec UNARYMINUS { lastreg = $$ = -$2; }
+	| BLTIN '(' expr ')'  { code2(bltin, (Inst)$1->u.ptr); }
+	| '(' expr ')'
+	| expr '+' expr { code(add); }
+	| expr '-' expr { code(sub); }
+	| expr '*' expr { code(mul); }
+	| expr '/' expr { code(divide); }
+	| '-' expr %prec UNARYMINUS { code(negate); }
 	;
 %%
-
+#include <stdio.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
@@ -65,7 +52,9 @@ void main(int argc, char **argv)
 	init();
 	setjmp(begin);
 	signal(SIGFPE, fpecatch);
-	yyparse();
+	for (initcode(); yyparse(); initcode())
+		execute(prog);
+	return 0;
 }
 
 void execerror(char *s, char *t)
@@ -88,18 +77,11 @@ yylex()
 	if (c == EOF)
 		return 0;
 	if (c == '.' || isdigit(c)) { /* number */
+		double d;
 		ungetc(c, stdin);
-		scanf("%lf", &yylval.val);
+		scanf("%lf", &d);
+		yylval.sym = install("", NUMBER, d);
 		return NUMBER;
-	}
-	if (c == '!') {
-		char sbuf[BUFSIZ], *p = sbuf;
-		while ((c=getchar()) != EOF && c != '\n') {
-			*p++ = c;
-		}
-		ungetc(c, stdin);
-		yylval.cmd = sbuf;
-		return CMD;
 	}
 	if (isalpha(c)) {
 		Symbol *s;
