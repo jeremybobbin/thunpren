@@ -33,6 +33,17 @@ static struct {
 	0,        0
 };
 
+static struct {
+	char *name;
+	int  kval;
+} keywords[] = {
+	"if",     IF,
+	"else",   ELSE,
+	"while",  WHILE,
+	"print",  PRINT,
+	0,        0
+};
+
 init()
 {
 	int i;
@@ -40,6 +51,8 @@ init()
 
 	for (i = 0; consts[i].name; i++)
 		install(consts[i].name, VAR, consts[i].cval);
+	for (i = 0; keywords[i].name; i++)
+		install(keywords[i].name, keywords[i].kval, 0.0);
 	for (i = 0; builtins[i].name; i++) {
 		s = install(builtins[i].name, BLTIN, 0.0);
 		s->u.ptr = builtins[i].fn;

@@ -9,9 +9,8 @@ static Datum *stackp;
 
 #define NPROG_MOD 2000
 static int nprog = 0;
-Inst *prog;
-Inst *progp;
 Inst *pc;
+extern Inst *progp = NULL, *prog = NULL;
 
 
 initcode()
@@ -153,4 +152,117 @@ negate()
 	d = pop();
 	d.val *= -1;
 	push(d);
+}
+
+gt()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val > d2.val);
+	push(d1);
+}
+
+lt()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val < d2.val);
+	push(d1);
+}
+
+
+eq()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val == d2.val);
+	push(d1);
+}
+
+ge()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val >= d2.val);
+	push(d1);
+}
+
+le()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val <= d2.val);
+}
+
+ne()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val != d2.val);
+	push(d1);
+}
+
+and()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val && d2.val);
+	push(d1);
+}
+
+or()
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val || d2.val);
+	push(d1);
+}
+
+not()
+{
+	Datum d1 = pop();
+	d1.val = (double)(!d1.val);
+	push(d1);
+}
+
+whilecode()
+{
+	Datum d;
+	Inst *savepc = pc;
+	execute(savepc+2);
+	d = pop();
+	while (d.val) {
+		execute(*((Inst **)(savepc)));
+		execute(savepc+2);
+		d = pop();
+	}
+	pc = *((Inst **)(savepc+1));
+}
+
+ifcode()
+{
+	Datum d;
+	Inst *savepc = pc;
+	execute(savepc+3);
+	d = pop();
+	if (d.val)
+		execute(*((Inst **)(savepc)));
+	else if (*((Inst **)(savepc+1)))
+		execute(*((Inst **)(savepc+1)));
+	pc = *((Inst **)(savepc+2));
+}
+
+prexpr()
+{
+	Datum d;
+	d = pop();
+	printf("%.8g\n", d.val);
 }

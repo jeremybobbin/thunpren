@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <errno.h>
+#include "hoc.h"
 extern int errno;
 double errcheck();
 
