@@ -4,7 +4,8 @@ extern double Pow();
 double mem[26];
 extern Inst *prog;
 #define code2(c1, c2)     code(c1); code(c2)
-#define code3(c1, c2, c3) code(c1); code(c2); code(c3);
+#define code3(c1, c2, c3) code(c1); code(c2); code(c3)
+#define code7(c1, c2, c3, c4, c5, c6, c7) code(c1); code(c2); code(c3); code(c4); code(c5); code(c6); code(c7)
 %}
 %union {
 	Symbol  *sym;
@@ -12,6 +13,8 @@ extern Inst *prog;
 }
 %token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE
 %type <inst> stmt asgn expr stmtlist cond while if end
+%right  PEQ SEQ /* += -= */
+%right  MEQ DEQ /* *= /= */
 %right '='
 %left  OR
 %left  AND
@@ -30,6 +33,10 @@ list:
 	| list error { yyerrok; }
 	;
 asgn:	VAR '=' expr { code3(varpush, (Inst)$1, assign); }
+	VAR PEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, add, assign); }
+	VAR SEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, sub, assign); }
+	VAR MEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, mul, assign); }
+	VAR DEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, divide, assign); }
 	;
 stmt:	  expr { code(pop); }
 	| PRINT expr { code(prexpr); $$ = $2; }
@@ -155,6 +162,12 @@ int yylex()
 		case '!': return follow('=', NE, NOT);
 		case '|': return follow('|', OR, '|');
 		case '&': return follow('&', AND, '&');
+
+		case '+': return follow('=', PEQ, '+');
+		case '-': return follow('=', SEQ, '-');
+		case '*': return follow('=', MEQ, '*');
+		case '/': return follow('=', DEQ, '/');
+
 		case '\n': lineno++;
 		default: return c;
 	}
