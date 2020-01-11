@@ -1,5 +1,5 @@
+int yylex();
 void execerror(char *s, char *t);
-yylex();
 void fpecatch();
 void yyerror(char *s);
 void warning(char *s, char *t);
@@ -26,9 +26,10 @@ typedef int (*Inst)();
 extern Inst *progp, *prog, *code();
 #define STOP (Inst) 0
 
-extern eval(), add(), sub(), mul(), divide(), negate(), power();
-extern assign(), bltin(), varpush(), constpush(), print();
-extern prexpr();
-extern gt(), lt(), eq(), ge(), le(), ne(), and(), or(), not();
-extern ifcode(), whilecode();
+void execute(Inst *p);
+extern void eval(), add(), sub(), mul(), divide(), negate(), power();
+extern void assign(), bltin(), varpush(), constpush(), print();
+extern void prexpr();
+extern void gt(), lt(), eq(), ge(), le(), ne(), and(), or(), not();
+extern void ifcode(), whilecode();
 

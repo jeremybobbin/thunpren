@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "hoc.h"
 #include "y.tab.h"
 
@@ -13,7 +14,7 @@ Inst *pc;
 extern Inst *progp = NULL, *prog = NULL;
 
 
-initcode()
+void initcode()
 {
 	if ((stackp = stack = malloc(sizeof(Datum) * NSTACK_MOD * ++nstack)) == NULL)
 		execerror("could not alloc datum stack", (char *) 0);
@@ -22,7 +23,7 @@ initcode()
 }
 
 
-push(Datum d)
+void push(Datum d)
 {
 	while (stackp >= (stack+(nstack*NSTACK_MOD)))
 		if ((stack = realloc(stack, sizeof(Datum) * NSTACK_MOD * ++nstack)) == NULL)
@@ -50,27 +51,27 @@ Inst *code(Inst f)
 	return oprogp;
 }
 
-execute(Inst p)
+void execute(Inst *p)
 {
 	for (pc = p; *pc != STOP; )
 		(*(*pc++))();
 }
 
-constpush() 
+void constpush() 
 {
 	Datum d;
 	d.val = ((Symbol *)*pc++)->u.val;
 	push(d);
 }
 
-varpush()
+void varpush()
 {
 	Datum d;
 	d.sym = (Symbol *)(*pc++);
 	push(d);
 }
 
-add()
+void add()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -79,7 +80,7 @@ add()
 	push(d1);
 }
 
-sub()
+void sub()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -88,7 +89,7 @@ sub()
 	push(d1);
 }
 
-mul()
+void mul()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -97,7 +98,7 @@ mul()
 	push(d1);
 }
 
-divide()
+void divide()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -106,7 +107,7 @@ divide()
 	push(d1);
 }
 
-eval()
+void eval()
 {
 	Datum d;
 	d = pop();
@@ -117,7 +118,7 @@ eval()
 	push(d);
 }
 
-assign()
+void assign()
 {
 	Datum d1, d2;
 	d1 = pop();
@@ -131,14 +132,14 @@ assign()
 }
 
 
-print()
+void print()
 {
 	Datum d;
 	d = pop();
 	printf("\t%.8g\n", d.val);
 }
 
-bltin()
+void bltin()
 {
 	Datum d;
 	d = pop();
@@ -146,7 +147,7 @@ bltin()
 	push(d);
 }
 
-negate()
+void negate()
 {
 	Datum d;
 	d = pop();
@@ -154,7 +155,7 @@ negate()
 	push(d);
 }
 
-gt()
+void gt()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -163,7 +164,7 @@ gt()
 	push(d1);
 }
 
-lt()
+void lt()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -173,7 +174,7 @@ lt()
 }
 
 
-eq()
+void eq()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -182,7 +183,7 @@ eq()
 	push(d1);
 }
 
-ge()
+void ge()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -191,15 +192,16 @@ ge()
 	push(d1);
 }
 
-le()
+void le()
 {
 	Datum d1, d2;
 	d2 = pop();
 	d1 = pop();
 	d1.val = (double)(d1.val <= d2.val);
+	push(d1);
 }
 
-ne()
+void ne()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -208,7 +210,7 @@ ne()
 	push(d1);
 }
 
-and()
+void and()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -217,7 +219,7 @@ and()
 	push(d1);
 }
 
-or()
+void or()
 {
 	Datum d1, d2;
 	d2 = pop();
@@ -226,14 +228,14 @@ or()
 	push(d1);
 }
 
-not()
+void not()
 {
 	Datum d1 = pop();
 	d1.val = (double)(!d1.val);
 	push(d1);
 }
 
-whilecode()
+void whilecode()
 {
 	Datum d;
 	Inst *savepc = pc;
@@ -247,7 +249,7 @@ whilecode()
 	pc = *((Inst **)(savepc+1));
 }
 
-ifcode()
+void ifcode()
 {
 	Datum d;
 	Inst *savepc = pc;
@@ -260,7 +262,7 @@ ifcode()
 	pc = *((Inst **)(savepc+2));
 }
 
-prexpr()
+void prexpr()
 {
 	Datum d;
 	d = pop();

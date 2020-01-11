@@ -25,6 +25,7 @@ list:
 	| list '\n'
 	| list ';' list
 	| list asgn { code2(pop, STOP); return 1; }
+	| list stmt { code(STOP); return 1; }
 	| list expr { code2(print, STOP); return 1; }
 	| list error { yyerrok; }
 	;
@@ -86,7 +87,7 @@ char *argv0;
 int lineno = 1;
 jmp_buf begin;
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	extern Inst *prog;
 	argv0 = argv[0];
@@ -119,7 +120,7 @@ int follow(expect, ifyes, ifno)
 	return ifno;
 }
 
-yylex()
+int yylex()
 {
 	int c;
 
