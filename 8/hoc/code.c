@@ -57,6 +57,78 @@ void execute(Inst *p)
 		(*(*pc++))();
 }
 
+int indent = 0;
+void print_inst(Inst *pc)
+{
+	if (*pc == STOP)
+		return;
+
+	for (int i = indent; i > 0; i--)
+		putchar('\t');
+
+	if (*pc == whilecode) {
+		printf("whilecode (\n");
+		indent++;
+		print_inst(&pc[3]);
+		indent--;
+		printf(") {\n");
+		indent++;
+		print_inst(pc[1]);
+		indent--;
+		printf("}\n");
+		print_inst(pc[2]);
+		return;
+	} else if (*pc == ifcode) {
+		printf("ifcode\n");
+		return print_inst(*(pc+1));
+	} else if (*pc == constpush) {
+		printf("constpush ");
+		return debug(pc+1);
+	} else if (*pc == eval) {
+		printf("eval ");
+		return debug(pc+1);
+	} else if (*pc == varpush) {
+		printf("varpush %s\n", ((Symbol *)*(pc+1))->name);
+		return debug(pc+2);
+	} else if (*pc == prexpr)
+		printf("prexpr\n");
+	else if (*pc == print)
+		printf("print\n");
+	else if (*pc == sub)
+		printf("sub\n");
+	else if (*pc == push)
+		printf("push\n");
+	else if (*pc == pop)
+		printf("pop\n");
+	else if (*pc == assign)
+		printf("assign\n");
+	else if (((Symbol *)*pc)->type == NUMBER) {
+		printf("%lf\n", ((Symbol *)*pc)->u.val);
+	} else if (((Symbol *)*pc)->type == VAR) {
+		printf("number: %lf\n", ((Symbol *)*pc)->name);
+	} else if (((Symbol *)*pc)->type == UNDEF) {
+		printf("number: %lf\n", ((Symbol *)*pc)->name);
+	} else {
+		printf("\n\n");
+		printf("------\n");
+		printf("unknown instruction: %d\n", *pc);
+		printf("type: %d\n", ((Symbol *)*pc)->type);
+		printf("dvalue: %d\n", ((Symbol *)*pc)->u.val);
+		printf("fvalue: %lf\n", ((Symbol *)*pc)->u.val);
+		if (((Symbol *)*pc)->type == VAR) 
+			printf("name: %s\n", ((Symbol *)*pc)->name);
+		//printf("name: %s\n", ((Symbol *)*pc)->name);
+		printf("------\n");
+		printf("\n\n");
+	}
+	return print_inst(pc+1);
+}
+
+void debug(Inst *p)
+{
+	print_inst(p);
+}
+
 void constpush() 
 {
 	Datum d;
@@ -268,6 +340,7 @@ void whilecode()
 {
 	Datum d;
 	Inst *savepc = pc;
+
 	execute(savepc+2);
 	d = pop();
 	while (d.val) {

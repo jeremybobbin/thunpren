@@ -111,8 +111,12 @@ int main(int argc, char **argv)
 	init();
 	setjmp(begin);
 	signal(SIGFPE, fpecatch);
-	for (initcode(); yyparse(); initcode())
-		execute(prog);
+	if (argc > 1 && strcmp(argv[1], "-d") == 0)
+		for (initcode(); yyparse(); initcode())
+			debug(prog);
+	else
+		for (initcode(); yyparse(); initcode())
+			execute(prog);
 	return 0;
 }
 
