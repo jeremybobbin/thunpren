@@ -11,16 +11,16 @@ extern Inst *prog;
 	Symbol  *sym;
 	Inst    *inst;
 }
-%token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE
-%type <inst> stmt asgn expr stmtlist cond while if end
-%right  PEQ SEQ /* += -= */
-%right  MEQ DEQ /* *= /= */
-%right '='
+%token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE AND OR
+%type <inst> stmt asgn expr stmtlist cond while if end and or
+%right  AEQ SEQ
+%right MEQ DEQ
+%right ASSIGN
 %left  OR
 %left  AND
 %left  GT GE LT LE EQ NE
-%left  '+' '-'
-%left  '*' '/' '%'
+%left  ADD SUB
+%left  MUL DIV
 %left  UNARYMINUS UNARYPLUS NOT
 %left '^'
 %%
@@ -32,11 +32,11 @@ list:
 	| list expr { code2(print, STOP); return 1; }
 	| list error { yyerrok; }
 	;
-asgn:	VAR '=' expr { code3(varpush, (Inst)$1, assign); }
-	VAR PEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, add, assign); }
-	VAR SEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, sub, assign); }
-	VAR MEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, mul, assign); }
-	VAR DEQ expr { code7(varpush, (Inst)$1, varpush, (Inst)$1, eval, divide, assign); }
+asgn:     VAR ASSIGN expr { code3(varpush, (Inst)$1, assign); }
+	| VAR AEQ expr { code7(varpush, (Inst)$1, eval, add, varpush, (Inst)$1, assign); }
+	| VAR SEQ expr { code7(varpush, (Inst)$1, eval, sub, varpush, (Inst)$1, assign); }
+	| VAR MEQ expr { code7(varpush, (Inst)$1, eval, mul, varpush, (Inst)$1, assign); }
+	| VAR DEQ expr { code7(varpush, (Inst)$1, eval, div, varpush, (Inst)$1, assign); }
 	;
 stmt:	  expr { code(pop); }
 	| PRINT expr { code(prexpr); $$ = $2; }
@@ -58,6 +58,10 @@ while:	WHILE { $$ = code3(whilecode, STOP, STOP); }
     	;
 if:	IF { $$=code(ifcode); code3(STOP, STOP, STOP); }
   	;
+and:	AND { $$ = code3(andcode, STOP, STOP); }
+    	;
+or:	OR { $$ = code3(orcode, STOP, STOP); }
+    	;
 end:	{ code(STOP); $$ = progp; }
    	;
 stmtlist:	{ $$ = progp; }
@@ -70,10 +74,10 @@ expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| BLTIN '(' expr ')' 
 		{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| '(' expr ')' { $$ = $2; }
-	| expr '+' expr { code(add); }
-	| expr '-' expr { code(sub); }
-	| expr '*' expr { code(mul); }
-	| expr '/' expr { code(divide); }
+	| expr ADD expr { code(add); }
+	| expr SUB expr { code(sub); }
+	| expr MUL expr { code(mul); }
+	| expr DIV expr { code(divide); }
 	| '-' expr %prec UNARYMINUS { code(negate); }
 	| expr GT expr { code(gt); }
 	| expr GE expr { code(ge); }
@@ -81,8 +85,14 @@ expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| expr LE expr { code(le); }
 	| expr EQ expr { code(eq); }
 	| expr NE expr { code(ne); }
-	| expr AND expr { code(and); }
-	| expr OR expr { code(or); }
+	| expr and expr end {
+		($2)[1] = (Inst)$3;
+		($2)[2] = (Inst)$4; }
+	| expr or expr end {
+		($2)[1] = (Inst)$3;
+		($2)[2] = (Inst)$4; }
+	//| expr AND expr { code(and); }
+	//| expr OR expr { code(or); }
 	| NOT expr { code(not); }
 	;
 %%
@@ -158,15 +168,15 @@ int yylex()
 	switch (c) {
 		case '>': return follow('=', GE, GT);
 		case '<': return follow('=', LE, LT);
-		case '=': return follow('=', EQ, '=');
+		case '=': return follow('=', EQ, ASSIGN);
 		case '!': return follow('=', NE, NOT);
 		case '|': return follow('|', OR, '|');
 		case '&': return follow('&', AND, '&');
 
-		case '+': return follow('=', PEQ, '+');
-		case '-': return follow('=', SEQ, '-');
-		case '*': return follow('=', MEQ, '*');
-		case '/': return follow('=', DEQ, '/');
+		case '+': return follow('=', AEQ, ADD);
+		case '-': return follow('=', SEQ, SUB);
+		case '*': return follow('=', MEQ, MUL);
+		case '/': return follow('=', DEQ, DIV);
 
 		case '\n': lineno++;
 		default: return c;
