@@ -12,7 +12,7 @@ extern Inst *prog;
 	Inst    *inst;
 }
 %token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE AND OR
-%type <inst> stmt asgn expr stmtlist cond while if end and or
+%type <inst> stmt asgn expr stmtlist cond while if end and or inst
 %right  AEQ SEQ
 %right MEQ DEQ
 %right ASSIGN
@@ -38,7 +38,8 @@ asgn:     VAR ASSIGN expr { code3(varpush, (Inst)$1, assign); }
 	| VAR MEQ expr { code7(varpush, (Inst)$1, eval, mul, varpush, (Inst)$1, assign); }
 	| VAR DEQ expr { code7(varpush, (Inst)$1, eval, div, varpush, (Inst)$1, assign); }
 	;
-stmt:	  expr { code(pop); }
+stmt:	stmt ';' stmt
+	|  expr { code(pop); }
 	| PRINT expr { code(prexpr); $$ = $2; }
 	| while cond stmt end {
 		($1)[1] = (Inst)$3;
@@ -58,16 +59,18 @@ while:	WHILE { $$ = code3(whilecode, STOP, STOP); }
     	;
 if:	IF { $$=code(ifcode); code3(STOP, STOP, STOP); }
   	;
-and:	AND { $$ = code3(andcode, STOP, STOP); }
-    	;
-or:	OR { $$ = code3(orcode, STOP, STOP); }
-    	;
 end:	{ code(STOP); $$ = progp; }
+	;
+inst:	expr { code(STOP); $$ = $1; }
    	;
 stmtlist:	{ $$ = progp; }
 	| stmtlist '\n'
 	| stmtlist stmt
    	;
+and:	AND { $$ = code2(andcode, STOP); }
+    	;
+or:	OR { $$ = code2(orcode, STOP); }
+    	;
 expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| VAR    { code3(varpush, (Inst)$1, eval); }
 	| asgn
@@ -85,12 +88,10 @@ expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| expr LE expr { code(le); }
 	| expr EQ expr { code(eq); }
 	| expr NE expr { code(ne); }
-	| expr and expr end {
-		($2)[1] = (Inst)$3;
-		($2)[2] = (Inst)$4; }
-	| expr or expr end {
-		($2)[1] = (Inst)$3;
-		($2)[2] = (Inst)$4; }
+	| expr and inst end {
+		($2)[1] = (Inst)$4; }
+	| expr or inst end {
+		($2)[1] = (Inst)$4; }
 	//| expr AND expr { code(and); }
 	//| expr OR expr { code(or); }
 	| NOT expr { code(not); }

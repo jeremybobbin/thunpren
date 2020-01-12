@@ -30,6 +30,6 @@ void execute(Inst *p);
 extern void eval(), add(), sub(), mul(), divide(), negate(), power();
 extern void assign(), bltin(), varpush(), constpush(), print();
 extern void prexpr();
-extern void gt(), lt(), eq(), ge(), le(), ne(), and(), or(), not(), andcode(), orcode();
-extern void ifcode(), whilecode();
+extern void gt(), lt(), eq(), ge(), le(), ne(), not();
+extern void ifcode(), whilecode(), andcode(), orcode();
 

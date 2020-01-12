@@ -81,7 +81,13 @@ void print_inst(Inst *pc)
 	} else if (*pc == ifcode) {
 		printf("ifcode\n");
 		return print_inst(*(pc+1));
-	} else if (*pc == constpush) {
+	} else if (*pc == andcode) {
+		printf("andcode\n");
+		return print_inst(*(pc+1));
+	} else if (*pc == orcode) {
+		printf("orcode\n");
+		return print_inst(*(pc+1));
+	}  else if (*pc == constpush) {
 		printf("constpush ");
 		return debug(pc+1);
 	} else if (*pc == eval) {
@@ -282,37 +288,16 @@ void ne()
 	push(d1);
 }
 
-void and()
-{
-	Datum d1, d2;
-	d2 = pop();
-	d1 = pop();
-	d1.val = (double)(d1.val && d2.val);
-	push(d1);
-}
-void or()
-{
-
-	Inst *savepc = pc;
-	Datum d1, d2;
-	d2 = pop();
-	d1 = pop();
-	if ((double) (d1.val || d2.val))
-		push(d2);
-	push(d1);
-}
-
-
 void andcode()
 {
-
 	Datum d;
 	Inst *savepc = pc;
 	d = pop();
 	if (d.val)
-		execute(pc[1]);
-	push(d);
-	pc = *((Inst **)(savepc+2));
+		execute(savepc+1);
+	else
+		push(d);
+	pc = *((Inst **)(savepc));
 }
 
 void orcode()
@@ -320,13 +305,11 @@ void orcode()
 	Datum d;
 	Inst *savepc = pc;
 	d = pop();
-	if (!d.val)
-	{
-		execute(pc[1]);
-		d = pop();
-	}
-	push(d);
-	pc = *((Inst **)(savepc+2));
+	if (d.val)
+		push(d);
+	else
+		execute(savepc+1);
+	pc = *((Inst **)(savepc));
 }
 
 void not()
