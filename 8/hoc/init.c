@@ -38,6 +38,7 @@ static struct {
 	int  kval;
 } keywords[] = {
 	"if",     IF,
+	"for",    FOR,
 	"else",   ELSE,
 	"while",  WHILE,
 	"print",  PRINT,

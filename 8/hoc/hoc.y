@@ -11,8 +11,8 @@ extern Inst *prog;
 	Symbol  *sym;
 	Inst    *inst;
 }
-%token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE AND OR
-%type <inst> stmt asgn expr stmtlist cond while if end and or inst
+%token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE FOR AND OR
+%type <inst> stmt asgn expr stmtlist cond while if for end and or exprseq
 %right  AEQ SEQ
 %right MEQ DEQ
 %right ASSIGN
@@ -51,6 +51,13 @@ stmt:	stmt ';' stmt
 		($1)[1] = (Inst)$3;
 		($1)[2] = (Inst)$6;
 		($1)[3] = (Inst)$7; }
+	/*1   2   3    4   5   6    7   8   9    10  11  12   13 */
+	| for '(' exprseq end ';' exprseq end ';' exprseq end ')' stmt end {
+		($1)[1] = (Inst)$3;
+		($1)[2] = (Inst)$6;
+		($1)[3] = (Inst)$9;
+		($1)[4] = (Inst)$12;
+		($1)[5] = (Inst)$13; }
 	| '{' stmtlist '}' { $$ = $2; }
 	;
 cond:	'(' expr ')' { code(STOP); $$ = $2; }
@@ -59,10 +66,15 @@ while:	WHILE { $$ = code3(whilecode, STOP, STOP); }
     	;
 if:	IF { $$=code(ifcode); code3(STOP, STOP, STOP); }
   	;
+for:	FOR { $$=code(forcode); code3(STOP, STOP, STOP); code2(STOP, STOP); }
+  	;
 end:	{ code(STOP); $$ = progp; }
 	;
-inst:	expr { code(STOP); $$ = $1; }
-   	;
+/* expression sequence */
+exprseq:	{ $$ = progp; } 
+	| exprseq ','
+	| exprseq expr
+	;
 stmtlist:	{ $$ = progp; }
 	| stmtlist '\n'
 	| stmtlist stmt
@@ -88,9 +100,9 @@ expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| expr LE expr { code(le); }
 	| expr EQ expr { code(eq); }
 	| expr NE expr { code(ne); }
-	| expr and inst end {
+	| expr and expr end {
 		($2)[1] = (Inst)$4; }
-	| expr or inst end {
+	| expr or expr end {
 		($2)[1] = (Inst)$4; }
 	//| expr AND expr { code(and); }
 	//| expr OR expr { code(or); }

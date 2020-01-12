@@ -31,5 +31,5 @@ extern void eval(), add(), sub(), mul(), divide(), negate(), power();
 extern void assign(), bltin(), varpush(), constpush(), print();
 extern void prexpr();
 extern void gt(), lt(), eq(), ge(), le(), ne(), not();
-extern void ifcode(), whilecode(), andcode(), orcode();
+extern void ifcode(), whilecode(), forcode(), andcode(), orcode();
 

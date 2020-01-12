@@ -334,6 +334,23 @@ void whilecode()
 	pc = *((Inst **)(savepc+1));
 }
 
+void forcode()
+{
+	Datum d;
+	Inst *savepc = pc;
+
+	execute(*((Inst **)(savepc)));   /* initialization */
+	execute(*((Inst **)(savepc+1))); /* condition      */
+	d = pop();
+	while (d.val) {
+		execute(*((Inst **)(savepc+3))); /* body           */
+		execute(*((Inst **)(savepc+2))); /* increment      */
+		execute(*((Inst **)(savepc+1))); /* condition      */
+		d = pop();
+	}
+	pc = *((Inst **)(savepc+1)); /* end      */
+}
+
 void ifcode()
 {
 	Datum d;
