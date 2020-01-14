@@ -10,6 +10,10 @@ static Datum *stackp;
 
 #define NPROG_MOD 2000
 static int nprog = 0;
+
+#define CONTINUE 1
+#define BREAK    2
+static int flags = 0;
 Inst *pc;
 extern Inst *progp = NULL, *prog = NULL;
 
@@ -53,8 +57,18 @@ Inst *code(Inst f)
 
 void execute(Inst *p)
 {
-	for (pc = p; *pc != STOP; )
+	for (pc = p; *pc != STOP && !flags; )
 		(*(*pc++))();
+}
+
+void brk()
+{
+	flags = BREAK;
+}
+
+void cont()
+{
+	flags = CONTINUE;
 }
 
 int indent = 0;
@@ -322,14 +336,28 @@ void not()
 void whilecode()
 {
 	Datum d;
+	int sflags = 0; /* saved flags */
 	Inst *savepc = pc;
 
 	execute(savepc+2);
 	d = pop();
 	while (d.val) {
 		execute(*((Inst **)(savepc)));
+		sflags = flags;
+		flags = 0;
+
 		execute(savepc+2);
 		d = pop();
+		if (sflags & BREAK)
+		{
+			flags = 0;
+			break;
+		}
+		if (sflags & CONTINUE)
+		{
+			flags = 0;
+			continue;
+		}
 	}
 	pc = *((Inst **)(savepc+1));
 }
@@ -338,15 +366,25 @@ void forcode()
 {
 	Datum d;
 	Inst *savepc = pc;
+	int sflags = 0; /* saved flags */
 
 	execute(*((Inst **)(savepc)));   /* initialization */
 	execute(*((Inst **)(savepc+1))); /* condition      */
 	d = pop();
 	while (d.val) {
 		execute(*((Inst **)(savepc+3))); /* body           */
+		sflags = flags;
+		flags = 0;
+		if (sflags & BREAK)
+		{
+			flags = 0;
+			break;
+		}
 		execute(*((Inst **)(savepc+2))); /* increment      */
 		execute(*((Inst **)(savepc+1))); /* condition      */
 		d = pop();
+		if (sflags & CONTINUE)
+			flags = 0;
 	}
 	pc = *((Inst **)(savepc+1)); /* end      */
 }

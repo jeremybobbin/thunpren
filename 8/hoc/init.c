@@ -37,12 +37,14 @@ static struct {
 	char *name;
 	int  kval;
 } keywords[] = {
-	"if",     IF,
-	"for",    FOR,
-	"else",   ELSE,
-	"while",  WHILE,
-	"print",  PRINT,
-	0,        0
+	"if",        IF,
+	"for",       FOR,
+	"else",      ELSE,
+	"while",     WHILE,
+	"print",     PRINT,
+	"continue",  CONT,
+	"break",     BRK,
+	0,           0
 };
 
 void init()

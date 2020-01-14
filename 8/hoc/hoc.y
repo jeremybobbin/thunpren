@@ -39,7 +39,9 @@ asgn:     VAR ASSIGN expr { code3(varpush, (Inst)$1, assign); }
 	| VAR DEQ expr { code7(varpush, (Inst)$1, eval, div, varpush, (Inst)$1, assign); }
 	;
 stmt:	stmt ';' stmt
-	|  expr { code(pop); }
+	| expr { code(pop); }
+	| CONT { code(cont); }
+	| BRK { code(brk); }
 	| PRINT expr { code(prexpr); $$ = $2; }
 	| while cond stmt end {
 		($1)[1] = (Inst)$3;
