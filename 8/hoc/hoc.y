@@ -25,8 +25,7 @@ extern Inst *prog;
 %left '^'
 %%
 list:
-	| list '\n'
-	| list ';' list
+	| list ';'
 	| list asgn { code2(pop, STOP); return 1; }
 	| list stmt { code(STOP); return 1; }
 	| list expr { code2(print, STOP); return 1; }
@@ -160,7 +159,7 @@ int yylex()
 {
 	int c;
 
-	while ((c=getchar()) == ' ' || c == '\t');
+	while ((c=getchar()) == ' ' || c == '\t' || c == '\n');
 
 	if (c == EOF)
 		return 0;
