@@ -1,17 +1,34 @@
 %{
 #include "hoc.h"
-extern double Pow();
-double mem[26];
-extern Inst *prog;
+#include <stdio.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <ctype.h>
 #define code2(c1, c2)     code(c1); code(c2)
 #define code3(c1, c2, c3) code(c1); code(c2); code(c3);
+char     *argv0;      
+int      lineno    =  1;
+jmp_buf  begin;       
+int      indef;       
+char     *infile;     
+FILE     *fin;        
+char     **gargv;     
+int      gargc;       
+int      c;
+
 %}
 %union {
 	Symbol  *sym;
 	Inst    *inst;
+	int     narg;
 }
-%token <sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE
-%type <inst> stmt asgn expr stmtlist cond while if end
+%token <sym> NUMBER STRING PRINT VAR BLTIN UNDEF WHILE IF ELSE
+%token <sym> FUNCTION PROCEDURE RETURN FUNC PROC READ
+%token <narg> ARG
+%type <inst> expr stmt asgn prlist stmtlist
+%type <inst> cond while if begin end
+%type <sym> procname
+%type <narg> arglist
 %right '='
 %left  OR
 %left  AND
@@ -23,16 +40,24 @@ extern Inst *prog;
 %%
 list:
 	| list '\n'
-	| list ';' list
-	| list asgn { code2(pop, STOP); return 1; }
-	| list stmt { code(STOP); return 1; }
-	| list expr { code2(print, STOP); return 1; }
-	| list error { yyerrok; }
+	| list defn '\n'
+	| list asgn '\n' { code2(pop, STOP); return 1; }
+	| list stmt '\n' { code(STOP); return 1; }
+	| list expr '\n' { code2(print, STOP); return 1; }
+	| list error '\n' { yyerrok; }
 	;
-asgn:	VAR '=' expr { code3(varpush, (Inst)$1, assign); }
+asgn:	  VAR '=' expr { code3(varpush, (Inst)$1, assign); $$=$3; }
+	| ARG '=' expr
+		{ defnonly("$"); code2(argassign, (Inst)$1); $$=$3; }
 	;
 stmt:	  expr { code(pop); }
-	| PRINT expr { code(prexpr); $$ = $2; }
+	| RETURN { defnonly("return"); code(procret); }
+	| RETURN expr
+		{ defnonly("return"); $$=$2; code(funcret); }
+
+	| PROCEDURE begin '(' arglist ')'
+		{ $$=$2; code3(call, (Inst)$1, (Inst)$4); }
+	| PRINT prlist { $$ = $2; }
 	| while cond stmt end {
 		($1)[1] = (Inst)$3;
 		($1)[2] = (Inst)$4; }
@@ -57,9 +82,13 @@ stmtlist:	{ $$ = progp; }
 	| stmtlist '\n'
 	| stmtlist stmt
    	;
-expr:	  NUMBER { code2(constpush, (Inst)$1); }
-	| VAR    { code3(varpush, (Inst)$1, eval); }
+expr:	  NUMBER { $$ = code2(constpush, (Inst)$1); }
+	| VAR    { $$ = code3(varpush, (Inst)$1, eval); }
+	| ARG    { defnonly("$"); $$ = code2(arg, (Inst)$1); }
 	| asgn
+	| FUNCTION begin '(' arglist ')'
+		{ $$ = $2; code3(call, (Inst)$1, (Inst)$4); }
+	| READ '(' VAR ')' { $$ = code2(varread, (Inst)$3); }
 	| BLTIN '(' expr ')' 
 		{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| '(' expr ')' { $$ = $2; }
@@ -76,26 +105,69 @@ expr:	  NUMBER { code2(constpush, (Inst)$1); }
 	| expr NE expr { code(ne); }
 	| expr AND expr { code(and); }
 	| expr OR expr { code(or); }
-	| NOT expr { code(not); }
+	| NOT expr { $$ = $2; code(not); }
 	;
+begin:	{ $$ = progp; }
+	;
+prlist:   expr { code(prexpr); }
+	| STRING { $$ = code2(prstr, (Inst)$1); }
+	| prlist ',' expr { code(prexpr); }
+	| prlist ',' STRING { code2(prstr, (Inst)$3); }
+	;
+defn:     FUNC procname { $2->type=FUNCTION; indef=1; }
+		'(' ')' stmt { code(procret); define($2); indef=0; } 
+	| PROC procname { $2->type=PROCEDURE; indef=1; }
+		'(' ')' stmt { code(procret); define($2); indef=0; }
+	;
+procname: VAR
+	| FUNCTION
+	| PROCEDURE
+	;
+arglist:  { $$ = 0; }
+	| expr { $$ = 1; }
+	| arglist ',' expr { $$ = $1 + 1; }
 %%
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <ctype.h>
-char *argv0;
-int lineno = 1;
-jmp_buf begin;
+int moreinput()
+{
+	if (gargc-- <= 0)
+		return 0;
+	if (fin && fin != stdin)
+		fclose(fin);
+	infile = *gargv++;
+	lineno = 1;
+	if (strcmp(infile, "-") == 0) {
+		fin = stdin;
+		infile = 0;
+	} else if ((fin=fopen(infile, "r")) == NULL) {
+		fprintf(stderr, "%s: can't open %s\n", argv0, infile);
+		return moreinput();
+	}
+	return 1;
+}
+
+run()
+{
+	setjmp(begin);
+	signal(SIGFPE, fpecatch);
+	for (initcode(); yyparse(); initcode())
+		execute(progbase);
+}
 
 int main(int argc, char **argv)
 {
 	extern Inst *prog;
 	argv0 = argv[0];
+	if (argc == 1) {
+		static char *stdinonly[] = { "-" };
+		gargv = stdinonly;
+		gargc = 1;
+	} else {
+		gargv = argv+1;
+		gargc = argc-1;
+	}
 	init();
-	setjmp(begin);
-	signal(SIGFPE, fpecatch);
-	for (initcode(); yyparse(); initcode())
-		execute(prog);
+	while (moreinput())
+		run();
 	return 0;
 }
 
@@ -110,6 +182,12 @@ void fpecatch()
 	execerror("floating point exception", (char *) 0);
 }
 
+void defnonly(char *s)
+{
+	if (!indef)
+		execerror(s, "used outside definition");
+}
+
 int follow(expect, ifyes, ifno)
 {
 	int c = getchar();
@@ -120,6 +198,18 @@ int follow(expect, ifyes, ifno)
 	return ifno;
 }
 
+int backslash(int c)
+{
+	char *index();
+	static char transtab[] = "b\bf\fn\nr\rt\t";
+	if (c != '\\')
+		return c;
+	c = getc(fin);
+	if(islower(c) && index(transtab, c))
+		return index(transtab, c)[1];
+	return c;
+}
+
 int yylex()
 {
 	int c;
@@ -128,6 +218,36 @@ int yylex()
 
 	if (c == EOF)
 		return 0;
+	
+	if (c == '$') {
+		int n = 0;
+		while (isdigit(c=getc(fin)))
+			n = 10 * n + c - '0';
+		ungetc(c, fin);
+		if (n == 0)
+			execerror("strange $...", (char *)0);
+		yylval.narg = n;
+		return ARG;
+	}
+
+	if (c == '"') {
+		char sbuf[100], *p, *emalloc();
+		for (p = sbuf; (c=getc(fin)) != '"'; p++) {
+			if (c == '\n' || c == EOF)
+				execerror("missing quote", "");
+			if (p >= sbuf + sizeof(sbuf) - 1) {
+				*p = '\0';
+				execerror("string too long", sbuf);
+			}
+			*p = backslash(c);
+		}
+		*p = 0;
+		yylval.sym = (Symbol *)emalloc(strlen(sbuf)+1);
+		return STRING;
+	}
+
+
+
 	if (c == '.' || isdigit(c)) { /* number */
 		double d;
 		ungetc(c, stdin);
@@ -173,4 +293,5 @@ void warning(char *s, char *t)
 	fprintf(stderr, " near line %d\n", lineno);
 
 }
+
 

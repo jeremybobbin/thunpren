@@ -1,9 +1,8 @@
 #!/bin/sh
 asserteq() {
-	cmd="$1"
-	expected="$2"
-	echo "running $cmd" 1>&2
-	result="$(eval $cmd)"
+	expected="$1"
+	echo "running" 1>&2
+	result="$(cat | ./hoc)"
 	if [ "$expected" -ne "$result" -o "$?" -ne 0 ]; then
 		echo "expected $expected, got $result" 1>&2
 		return 1
@@ -13,6 +12,9 @@ asserteq() {
 	fi
 }
 
-asserteq "echo '5 + 5' | ./hoc" 10
-asserteq "echo 'if (1) { print 0 } else { print 1 }' | ./hoc" 0
-asserteq "echo 'if (10 <= 10) { print 1 }' | ./hoc" 1
+asserteq 7 << "EOF"
+func plus2() {
+	return $1 + 2
+}
+plus2(5)
+EOF

@@ -2,25 +2,88 @@
 #include <stdio.h>
 #include "hoc.h"
 #include "y.tab.h"
+extern Inst *progp = NULL, *prog = NULL, *progbase = NULL;
+
 
 #define NSTACK_MOD 256
 static int nstack = 0;
 static Datum *stack;
 static Datum *stackp;
 
+
 #define NPROG_MOD 2000
 static int nprog = 0;
 Inst *pc;
-extern Inst *progp = NULL, *prog = NULL;
+int returning;
+
+typedef struct Frame {
+	Symbol  *sp;
+	Inst    *retpc;
+	Datum   *argn;
+	int     nargs;
+} Frame;
+
+#define NFRAME 100
+Frame frame[NFRAME];
+Frame *fp;
 
 
 void initcode()
 {
 	if ((stackp = stack = malloc(sizeof(Datum) * NSTACK_MOD * ++nstack)) == NULL)
 		execerror("could not alloc datum stack", (char *) 0);
-	if ((progp = prog = malloc(sizeof(Inst) * NPROG_MOD * ++nprog)) == NULL)
+	if ((progbase = progp = prog = malloc(sizeof(Inst) * NPROG_MOD * ++nprog)) == NULL)
 		execerror("could not alloc instruction stack", (char *) 0);
+	fp = frame;
 }
+
+void define(Symbol *sp)
+{
+	sp->u.defn = (Inst)progbase;
+	progbase = progp;
+}
+
+void call()
+{
+	Symbol *sp = (Symbol *)pc[0];
+		if (fp++ >= &frame[NFRAME-1])
+			execerror("call nested too deeply and no can realloc", (char *) 0);
+	fp->sp = sp;
+	fp->nargs = (int)pc[1];
+	fp->retpc = pc + 2;
+	fp->argn = stackp - 1;
+	execute(sp->u.defn);
+	returning = 0;
+}
+
+void ret()
+{
+	int i;
+	for (i = 0; i < fp->nargs; i++)
+		pop();
+	pc = (Inst *)fp->retpc;
+	--fp;
+	returning = 1;
+}
+
+void funcret()
+{
+	Datum d;
+	if(fp->sp->type == PROCEDURE)
+		execerror(fp->sp->name, "(proc) returns value");
+	d = pop();
+	ret();
+	push(d);
+}
+
+void procret()
+{
+	Datum d;
+	if(fp->sp->type == FUNCTION)
+		execerror(fp->sp->name, "(func) returns no value");
+	ret();
+}
+
 
 
 void push(Datum d)
@@ -53,7 +116,7 @@ Inst *code(Inst f)
 
 void execute(Inst *p)
 {
-	for (pc = p; *pc != STOP; )
+	for (pc = p; *pc != STOP && !returning; )
 		(*(*pc++))();
 }
 
@@ -70,6 +133,53 @@ void varpush()
 	d.sym = (Symbol *)(*pc++);
 	push(d);
 }
+
+void varread()
+{
+	Datum d;
+	extern FILE *fin;
+	Symbol *var = (Symbol *) pc++;
+Again:
+	switch (fscanf(fin, "%lf", &var->u.val)) {
+		case EOF:
+			if (moreinput())
+				goto Again;
+			d.val = var->u.val = 0.0;
+			break;
+		case 0:
+			execerror("noon-number read into", var->name);
+			break;
+		default:
+			d.val = 1.0;
+			break;
+	}
+	var->type = VAR;
+	push(d);
+}
+
+double *getarg()
+{
+	int nargs = (int) *pc++;
+	if (nargs > fp->nargs)
+		execerror(fp->sp->name, "not enough arguments");
+	return &fp->argn[nargs - fp->nargs].val;
+}
+
+void arg()
+{
+	Datum d;
+	d.val = *getarg();
+	push(d);
+}
+
+void argassign()
+{
+	Datum d;
+	d = pop();
+	push(d);
+	*getarg() = d.val;
+}
+
 
 void add()
 {
@@ -246,7 +356,8 @@ void whilecode()
 		execute(savepc+2);
 		d = pop();
 	}
-	pc = *((Inst **)(savepc+1));
+	if (!returning)
+		pc = *((Inst **)(savepc+1));
 }
 
 void ifcode()
@@ -259,8 +370,15 @@ void ifcode()
 		execute(*((Inst **)(savepc)));
 	else if (*((Inst **)(savepc+1)))
 		execute(*((Inst **)(savepc+1)));
-	pc = *((Inst **)(savepc+2));
+	if (!returning)
+		pc = *((Inst **)(savepc+2));
 }
+
+void prstr()
+{
+	printf("%s", (char *) *pc++);
+}
+
 
 void prexpr()
 {
