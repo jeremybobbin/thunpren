@@ -50,7 +50,7 @@ void call()
 			execerror("call nested too deeply and no can realloc", (char *) 0);
 	fp->sp = sp;
 	fp->nargs = (int)pc[1];
-	fp->retpc = pc + 2;
+	fp->retpc = pc + 2; /* 5 instructions per arg */
 	fp->argn = stackp - 1;
 	execute(sp->u.defn);
 	returning = 0;

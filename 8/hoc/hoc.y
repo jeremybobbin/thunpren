@@ -28,7 +28,7 @@ int      c;
 %type <inst> expr stmt asgn prlist stmtlist
 %type <inst> cond while if begin end
 %type <sym> procname
-%type <narg> arglist
+%type <narg> arglist argdecllist
 %right '='
 %left  OR
 %left  AND
@@ -115,17 +115,22 @@ prlist:   expr { code(prexpr); }
 	| prlist ',' STRING { code2(prstr, (Inst)$3); }
 	;
 defn:     FUNC procname { $2->type=FUNCTION; indef=1; }
-		'(' ')' stmt { code(procret); define($2); indef=0; } 
+		'(' argdecllist ')' stmt { code(funcret); define($2); indef=0; } 
 	| PROC procname { $2->type=PROCEDURE; indef=1; }
-		'(' ')' stmt { code(procret); define($2); indef=0; }
+		'(' argdecllist ')' stmt { code(procret); define($2); indef=0; }
 	;
 procname: VAR
 	| FUNCTION
 	| PROCEDURE
 	;
+argdecllist: { $$ = 0; }
+	| VAR { code2(arg, (Inst)1); code3(varpush, (Inst)$1, assign);  $$ = 1;  }
+	| argdecllist ',' VAR { code2(arg, (Inst)($1 + 1)); code3(varpush, (Inst)$3, assign); $$ = ($1 + 1); }
+	;
 arglist:  { $$ = 0; }
 	| expr { $$ = 1; }
 	| arglist ',' expr { $$ = $1 + 1; }
+	;
 %%
 int moreinput()
 {
