@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# The complexity added to this version is significant enough to justify reverting to the original.
+
+compile_roff() {
+	egrep -h '^\.(EQ|TS|\[|PS|IS|PP)' $* |
+		sort -u | awk '
+		/^\.PP/ { ms++ }
+		/^\.EQ/ { eqn++ }
+		/^\.TS/ { tbl++ }
+		/^\.PS/ { pic++ }
+		/^\.IS/ { ideal++ }
+		/^\.\[/ { refer++ }
+		END {
+			if (refer > 0) pp[++i] = "refer"
+			if (pic > 0) pp[++i] = "pic"
+			if (ideal > 0) pp[++i] = "ideal"
+			if (tbl > 0) pp[++i] = "tbl"
+			if (eqn > 0) pp[++i] = "eqn"
+			pp[++i] = (ms > 0) ? "groff -ms " : "groff"
+			end = i
+			for (i in pp) {
+				printf "%s ", pp[i]
+				if (i == 1)
+					printf "%s", "'"$*"'"
+				if (i != end)
+					printf " | "
+
+			}
+			printf "\n"
+
+		}'
+}
+
+compile_roff $* 
